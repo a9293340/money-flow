@@ -1,0 +1,28 @@
+{
+  "name": "personal-finance-manager",
+  "type": "module",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Personal Finance Manager - Web Application",
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint . --fix",
+    "type-check": "vue-tsc --noEmit",
+    "test": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "nuxt": "3.18.1",
+    "vue": "^3.5.18",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "^1.6.0",
+    "typescript": "^5.7.2"
+  }
+}
