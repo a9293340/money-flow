@@ -1,0 +1,273 @@
+# Personal Finance Manager - .gitignore
+
+# ======================================
+# Node.js 相關
+# ======================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ======================================
+# Nuxt.js 建置和快取
+# ======================================
+.nuxt/
+.output/
+.nitro/
+.cache/
+dist/
+
+# ======================================
+# 環境變數和機密檔案
+# ======================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
+
+# API 金鑰和機密設定
+*.key
+*.pem
+*.p12
+*.jks
+android-keystore.jks
+service-account-key.json
+firebase-admin-key.json
+
+# ======================================
+# Tauri 2 移動端相關
+# ======================================
+src-tauri/target/
+src-tauri/gen/
+src-tauri/WixTools/
+
+# Android 相關
+*.apk
+*.aab
+local.properties
+gradle.properties
+keystore.properties
+
+# iOS 相關
+*.ipa
+ios/Pods/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/build/
+DerivedData/
+
+# Rust 編譯相關
+**/*.rs.bk
+Cargo.lock
+
+# ======================================
+# 測試和覆蓋率報告
+# ======================================
+coverage/
+*.lcov
+.nyc_output/
+junit.xml
+test-results/
+playwright-report/
+test-results.xml
+
+# ======================================
+# IDE 和編輯器設定
+# ======================================
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+.idea/
+*.swp
+*.swo
+*~
+
+# ======================================
+# 作業系統檔案
+# ======================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ======================================
+# 日誌檔案
+# ======================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pino-pretty.log
+
+# ======================================
+# 暫存和快取檔案
+# ======================================
+.tmp/
+.temp/
+.cache/
+.parcel-cache/
+.next/
+.swc/
+
+# ======================================
+# 部署和 CI/CD 相關
+# ======================================
+# Docker
+.dockerignore
+Dockerfile.prod
+docker-compose.override.yml
+
+# Google Cloud
+gcp-key.json
+.gcloudignore
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+
+# ======================================
+# 開發工具生成檔案
+# ======================================
+# ESLint 快取
+.eslintcache
+
+# Prettier 快取
+.prettiercache
+
+# TypeScript 建置資訊
+*.tsbuildinfo
+
+# Webpack 快取
+.webpack/
+
+# ======================================
+# 資料庫和備份檔案
+# ======================================
+*.sqlite
+*.sqlite3
+*.db
+dump.sql
+backup/
+*.backup
+
+# ======================================
+# 媒體和靜態資源 (大檔案)
+# ======================================
+# 不追蹤大型媒體檔案
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+
+# 不追蹤高解析度圖片 (保留小圖示和截圖)
+uploads/
+user-uploads/
+*.psd
+*.ai
+*.sketch
+
+# ======================================
+# 臨時腳本檔案 (一次性使用)
+# ======================================
+scripts/temp-*
+scripts/setup-*
+scripts/migrate-*
+scripts/one-time-*
+temp-script.*
+
+# ======================================
+# 效能和分析報告
+# ======================================
+.lighthouse/
+lighthouse-results.html
+bundle-analyzer/
+stats.json
+
+# ======================================
+# 安全掃描報告
+# ======================================
+security-report.*
+audit-report.*
+vulnerability-report.*
+
+# ======================================
+# 本地開發資料
+# ======================================
+local-data/
+dev-data/
+mock-data/local/
+test-uploads/
+
+# ======================================
+# 打包和發布檔案
+# ======================================
+# 應用程式安裝檔案
+*.dmg
+*.exe
+*.deb
+*.rpm
+*.tar.gz
+*.zip
+
+# 發布相關
+release/
+releases/
+dist-mobile/
+
+# ======================================
+# 監控和日誌
+# ======================================
+monitoring/local/
+prometheus/data/
+grafana/data/
+
+# ======================================
+# 其他專案特定檔案
+# ======================================
+# 臨時筆記
+TODO.local.md
+NOTES.local.md
+scratch.md
+
+# 本地設定檔案
+config.local.*
+settings.local.*
+
+# 開發者個人檔案
+.dev-notes/
+personal-notes.*
