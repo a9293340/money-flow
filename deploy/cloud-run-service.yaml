@@ -37,7 +37,7 @@ spec:
       
       containers:
       - name: personal-finance-manager
-        image: a9293340/personal-finance-manager:latest
+        image: a9293340/personal-finance-manager:DEPLOY_TAG_PLACEHOLDER
         
         ports:
         - name: http1
