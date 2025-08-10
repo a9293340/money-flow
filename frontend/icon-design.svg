@@ -1,0 +1,48 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 背景漸變 -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E40AF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0891B2;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 金錢符號漸變 -->
+    <linearGradient id="moneyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 流動線條漸變 -->
+    <linearGradient id="flowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34D399;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#10B981;stop-opacity:0.6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圓形 -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGradient)" stroke="#ffffff" stroke-width="4"/>
+  
+  <!-- 流動線條裝飾 -->
+  <path d="M 120 200 Q 180 150 240 200 T 360 200" fill="none" stroke="url(#flowGradient)" stroke-width="8" stroke-linecap="round" opacity="0.6"/>
+  <path d="M 140 320 Q 200 370 260 320 T 380 320" fill="none" stroke="url(#flowGradient)" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+  
+  <!-- 主要金錢符號 ($) -->
+  <g transform="translate(256, 256)">
+    <!-- 垂直線 -->
+    <rect x="-6" y="-120" width="12" height="240" fill="url(#moneyGradient)" rx="6"/>
+    
+    <!-- 上半部 S 形狀 -->
+    <path d="M -60 -60 Q -60 -90 -30 -90 L 30 -90 Q 60 -90 60 -60 Q 60 -30 30 -30 L -30 -30 Q -45 -30 -45 -15 Q -45 0 -30 0 L 60 0" 
+          fill="none" stroke="url(#moneyGradient)" stroke-width="24" stroke-linecap="round"/>
+    
+    <!-- 下半部 S 形狀 -->
+    <path d="M -60 0 L 30 0 Q 45 0 45 15 Q 45 30 30 30 L -30 30 Q -60 30 -60 60 Q -60 90 -30 90 L 30 90 Q 60 90 60 60" 
+          fill="none" stroke="url(#moneyGradient)" stroke-width="24" stroke-linecap="round"/>
+  </g>
+  
+  <!-- 外圈裝飾圓點 -->
+  <circle cx="130" cy="130" r="8" fill="url(#flowGradient)" opacity="0.8"/>
+  <circle cx="382" cy="130" r="6" fill="url(#flowGradient)" opacity="0.6"/>
+  <circle cx="130" cy="382" r="6" fill="url(#flowGradient)" opacity="0.6"/>
+  <circle cx="382" cy="382" r="8" fill="url(#flowGradient)" opacity="0.8"/>
+</svg>
