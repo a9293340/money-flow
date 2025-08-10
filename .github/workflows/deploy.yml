@@ -94,7 +94,8 @@ jobs:
     name: 🐳 Build & Push Docker Image
     runs-on: ubuntu-latest
     needs: quality-check
-    # 只有當 frontend/ 或 deploy/ 有變更，或手動強制部署時才執行
+    # 只有當 Web 相關檔案或 deploy/ 有變更，或手動強制部署時才執行
+    # 排除純 Tauri 配置變更 (frontend/src-tauri/)
     if: |
       (needs.quality-check.result == 'success') && (
         github.event.inputs.force_deploy == 'true' ||
@@ -103,8 +104,18 @@ jobs:
           github.event_name == 'push' &&
           !contains(github.event.head_commit.message, '[skip deploy]') &&
           (
-            contains(join(github.event.commits.*.modified, ' '), 'frontend/') ||
-            contains(join(github.event.commits.*.added, ' '), 'frontend/') ||
+            contains(join(github.event.commits.*.modified, ' '), 'frontend/app/') ||
+            contains(join(github.event.commits.*.modified, ' '), 'frontend/server/') ||
+            contains(join(github.event.commits.*.modified, ' '), 'frontend/public/') ||
+            contains(join(github.event.commits.*.modified, ' '), 'frontend/docker/') ||
+            contains(join(github.event.commits.*.modified, ' '), 'frontend/nuxt.config') ||
+            contains(join(github.event.commits.*.modified, ' '), 'frontend/package.json') ||
+            contains(join(github.event.commits.*.modified, ' '), 'frontend/yarn.lock') ||
+            contains(join(github.event.commits.*.modified, ' '), 'frontend/tsconfig.json') ||
+            contains(join(github.event.commits.*.modified, ' '), 'frontend/eslint.config') ||
+            contains(join(github.event.commits.*.added, ' '), 'frontend/app/') ||
+            contains(join(github.event.commits.*.added, ' '), 'frontend/server/') ||
+            contains(join(github.event.commits.*.added, ' '), 'frontend/public/') ||
             contains(join(github.event.commits.*.modified, ' '), 'deploy/')
           )
         )
@@ -345,8 +356,10 @@ jobs:
           
           echo "💡 智能觸發提示:"
           echo "  - 只修改文檔 (.md, docs/) → 完全跳過"
-          echo "  - 修改程式碼但非 frontend/ → 只執行品質檢查"  
-          echo "  - 修改 frontend/ 或 deploy/ → 執行完整部署"
+          echo "  - 修改程式碼但非 Web 相關 → 只執行品質檢查"  
+          echo "  - 修改 Web 檔案 (app/, server/, nuxt.config等) → 執行完整部署"
+          echo "  - 修改 Tauri 配置 (src-tauri/) → 只執行品質檢查"
+          echo "  - 修改 deploy/ 配置 → 執行完整部署"
           echo "  - 手動觸發 + force_deploy → 強制執行所有階段"
           echo "  - PR → 品質檢查 + 建置測試 (不部署)"
 
