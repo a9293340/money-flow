@@ -1,0 +1,24 @@
+{
+  "name": "personal-finance-manager-root",
+  "version": "1.0.0",
+  "description": "Personal Finance Manager - Root Package",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && yarn dev",
+    "build": "cd frontend && yarn build",
+    "build:apk": "cd frontend && yarn build:apk",
+    "build:apk:debug": "cd frontend && yarn build:apk:debug",
+    "mobile:dev": "cd frontend && yarn mobile:dev",
+    "mobile:build": "cd frontend && yarn mobile:build",
+    "test": "cd frontend && yarn test",
+    "lint": "cd frontend && yarn lint",
+    "type-check": "cd frontend && yarn type-check",
+    "setup:tauri-android": "./scripts/setup-tauri-android.sh",
+    "setup:env": "source scripts/quick-setup-env.sh",
+    "setup:permanent": "./scripts/setup-permanent-env.sh",
+    "install:all": "cd frontend && yarn install"
+  },
+  "workspaces": [
+    "frontend"
+  ]
+}

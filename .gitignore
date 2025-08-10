@@ -210,11 +210,16 @@ user-uploads/
 # 臨時腳本檔案 (一次性使用)
 # ======================================
 scripts/temp-*
-scripts/setup-*
 scripts/migrate-*
 scripts/one-time-*
 scripts/backup/
 temp-script.*
+
+# 排除臨時設定腳本，但保留重要的環境設定腳本
+scripts/setup-temp-*
+scripts/setup-local-*
+!scripts/setup-tauri-android.sh
+!scripts/quick-setup-env.sh
 
 # ======================================
 # 效能和分析報告
