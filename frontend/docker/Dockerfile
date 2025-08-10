@@ -1,0 +1,86 @@
+# Multi-stage build for Nuxt.js 3 application
+FROM node:22-alpine AS base
+
+# Install pnpm globally
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+
+# Install dependencies stage
+FROM base AS deps
+# Install dependencies based on the preferred package manager
+RUN \
+  if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
+
+# Build stage
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Generate Prisma client if needed (uncomment if using Prisma)
+# RUN npx prisma generate
+
+# Build the application
+ENV NODE_ENV=production
+RUN \
+  if [ -f yarn.lock ]; then yarn build; \
+  elif [ -f package-lock.json ]; then npm run build; \
+  elif [ -f pnpm-lock.yaml ]; then pnpm build; \
+  else npm run build; \
+  fi
+
+# Production runtime stage
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+# Create a non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nuxtjs
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV NUXT_HOST=0.0.0.0
+ENV NUXT_PORT=3000
+
+# Copy package.json for production dependencies
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+
+# Install only production dependencies
+RUN \
+  if [ -f yarn.lock ]; then yarn install --production --frozen-lockfile && yarn cache clean; \
+  elif [ -f package-lock.json ]; then npm ci --only=production && npm cache clean --force; \
+  elif [ -f pnpm-lock.yaml ]; then pnpm install --prod --frozen-lockfile && pnpm store prune; \
+  else npm install --production && npm cache clean --force; \
+  fi
+
+# Copy built application
+COPY --from=builder --chown=nuxtjs:nodejs /app/.output ./.output
+
+# Copy health check script
+COPY --chown=nuxtjs:nodejs ./docker/healthcheck.sh ./healthcheck.sh
+RUN chmod +x ./healthcheck.sh
+
+# Create necessary directories and set permissions
+RUN mkdir -p /app/uploads && chown -R nuxtjs:nodejs /app/uploads
+
+# Switch to non-root user
+USER nuxtjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD ./healthcheck.sh
+
+# Start the application
+CMD ["node", ".output/server/index.mjs"]

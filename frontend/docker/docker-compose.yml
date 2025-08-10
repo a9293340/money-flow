@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Web application
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NUXT_HOST=0.0.0.0
+      - NUXT_PORT=3000
+      # Database
+      - MONGODB_URI=${MONGODB_URI:-mongodb+srv://a9293340:574597@cluster0.rnvhhr4.mongodb.net/personal-finance-manager}
+      # Security
+      - JWT_SECRET=${JWT_SECRET:-vJL3+1sMvw+CXCIHa02BqDR3Cksd50D9US0dL2ypO0U=}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-0be72826b36cd2d71b3bb5144b7870ff7d90ce4422ed10ceb194d6d9ffc64865}
+      - BCRYPT_ROUNDS=${BCRYPT_ROUNDS:-12}
+      # App settings
+      - APP_NAME=${APP_NAME:-Personal Finance Manager}
+      - APP_URL=${APP_URL:-http://localhost:3000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      # JWT settings  
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - PASSWORD_RESET_EXPIRES=${PASSWORD_RESET_EXPIRES:-1h}
+      - EMAIL_VERIFICATION_EXPIRES=${EMAIL_VERIFICATION_EXPIRES:-24h}
+      # Pagination
+      - DEFAULT_PAGE_SIZE=${DEFAULT_PAGE_SIZE:-20}
+      - MAX_PAGE_SIZE=${MAX_PAGE_SIZE:-100}
+      # File upload
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
+      - UPLOAD_PATH=${UPLOAD_PATH:-/app/uploads}
+      - ALLOWED_FILE_TYPES=${ALLOWED_FILE_TYPES:-image/jpeg,image/png,image/webp}
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      # Mount upload directory (optional, for file persistence)
+      - uploads_data:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health/database"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Redis cache (optional, for future use)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+    profiles:
+      - with-redis  # Only start with --profile with-redis
+
+volumes:
+  uploads_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
