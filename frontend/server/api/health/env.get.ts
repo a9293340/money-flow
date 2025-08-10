@@ -3,18 +3,18 @@ import { validateEnvironment, getConfig, isDevelopment } from '../../utils/env'
 export default defineEventHandler(async (event) => {
   try {
     const validation = validateEnvironment()
-    
+
     if (!validation.valid) {
       setResponseStatus(event, 500)
       return {
         status: 'ERROR',
         timestamp: new Date().toISOString(),
-        errors: validation.errors
+        errors: validation.errors,
       }
     }
-    
+
     const config = getConfig()
-    
+
     // 在生產環境隱藏敏感資訊
     const sanitizedConfig = {
       appName: config.appName,
@@ -33,23 +33,24 @@ export default defineEventHandler(async (event) => {
       ...(isDevelopment() && {
         mongodbUri: config.mongodbUri.replace(/\/\/[^@]+@/, '//***:***@'), // 隱藏用戶名密碼
         jwtSecretLength: config.jwtSecret.length,
-        encryptionKeyLength: config.encryptionKey.length
-      })
+        encryptionKeyLength: config.encryptionKey.length,
+      }),
     }
-    
+
     return {
       status: 'OK',
       timestamp: new Date().toISOString(),
-      config: sanitizedConfig
+      config: sanitizedConfig,
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Environment health check failed:', error)
-    
+
     setResponseStatus(event, 500)
     return {
-      status: 'ERROR', 
+      status: 'ERROR',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     }
   }
 })

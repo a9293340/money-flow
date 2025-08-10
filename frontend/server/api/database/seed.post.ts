@@ -13,65 +13,65 @@ const defaultCategories = [
   { name: '水電', type: 'expense', icon: 'electricity', color: '#06B6D4' },
   { name: '通訊', type: 'expense', icon: 'phone', color: '#84CC16' },
   { name: '保險', type: 'expense', icon: 'insurance', color: '#6366F1' },
-  
-  // 收入分類  
+
+  // 收入分類
   { name: '薪資', type: 'income', icon: 'salary', color: '#059669' },
   { name: '獎金', type: 'income', icon: 'bonus', color: '#D97706' },
   { name: '投資', type: 'income', icon: 'investment', color: '#7C3AED' },
   { name: '副業', type: 'income', icon: 'business', color: '#DC2626' },
   { name: '利息', type: 'income', icon: 'interest', color: '#0891B2' },
-  { name: '其他收入', type: 'income', icon: 'other', color: '#65A30D' }
+  { name: '其他收入', type: 'income', icon: 'other', color: '#65A30D' },
 ]
 
 export default defineEventHandler(async (event) => {
   try {
     // 檢查是否為 POST 請求
     assertMethod(event, 'POST')
-    
+
     // 讀取請求 body
     const body = await readBody(event)
     const { userId } = body
-    
+
     if (!userId) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'userId is required'
+        statusMessage: 'userId is required',
       })
     }
-    
+
     // 檢查用戶是否存在
     const user = await User.findById(userId)
     if (!user) {
       throw createError({
         statusCode: 404,
-        statusMessage: 'User not found'
+        statusMessage: 'User not found',
       })
     }
-    
+
     // 檢查是否已存在預設分類
     const existingCategories = await Category.countDocuments({
       userId,
-      isSystem: true
+      isSystem: true,
     })
-    
+
     if (existingCategories > 0) {
       return {
         success: true,
         message: 'Default categories already exist',
-        count: existingCategories
+        count: existingCategories,
       }
     }
-    
+
     // 建立系統預設分類
     const categories = defaultCategories.map(cat => ({
       ...cat,
       userId,
       isSystem: true,
-      sortOrder: defaultCategories.indexOf(cat)
+      sortOrder: defaultCategories.indexOf(cat),
     }))
-    
+
     const createdCategories = await Category.insertMany(categories)
-    
+
     return {
       success: true,
       message: 'Default categories created successfully',
@@ -81,19 +81,20 @@ export default defineEventHandler(async (event) => {
         name: cat.name,
         type: cat.type,
         icon: cat.icon,
-        color: cat.color
-      }))
+        color: cat.color,
+      })),
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Database seed error:', error)
-    
+
     if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error
     }
-    
+
     throw createError({
       statusCode: 500,
-      statusMessage: error instanceof Error ? error.message : 'Seed operation failed'
+      statusMessage: error instanceof Error ? error.message : 'Seed operation failed',
     })
   }
 })

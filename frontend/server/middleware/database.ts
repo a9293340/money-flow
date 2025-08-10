@@ -7,21 +7,22 @@ export default defineEventHandler(async (event) => {
     try {
       // 確保資料庫連接
       const status = await connectToDatabase()
-      
+
       if (!status.isConnected) {
         throw createError({
           statusCode: 503,
-          statusMessage: `Database connection failed: ${status.error || 'Unknown error'}`
+          statusMessage: `Database connection failed: ${status.error || 'Unknown error'}`,
         })
       }
-      
+
       // 在 event context 中添加連接狀態，供後續使用
       event.context.dbConnected = true
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Database middleware error:', error)
       throw createError({
         statusCode: 503,
-        statusMessage: 'Database service unavailable'
+        statusMessage: 'Database service unavailable',
       })
     }
   }

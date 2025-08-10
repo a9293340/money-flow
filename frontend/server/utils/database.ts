@@ -21,11 +21,11 @@ export async function connectToDatabase(): Promise<ConnectionStatus> {
     mongoose.set('strictQuery', false)
     mongoose.set('toJSON', {
       virtuals: true,
-      transform: function(_doc, ret) {
-        delete (ret as any)._id
-        delete (ret as any).__v
+      transform: function (_doc, ret: Record<string, unknown>) {
+        delete ret._id
+        delete ret.__v
         return ret
-      }
+      },
     })
 
     await mongoose.connect(mongoUri, {
@@ -53,11 +53,12 @@ export async function connectToDatabase(): Promise<ConnectionStatus> {
     })
 
     return connectionStatus
-  } catch (error) {
+  }
+  catch (error) {
     console.error('資料庫連接失敗:', error)
-    connectionStatus = { 
-      isConnected: false, 
-      error: error instanceof Error ? error.message : '未知錯誤' 
+    connectionStatus = {
+      isConnected: false,
+      error: error instanceof Error ? error.message : '未知錯誤',
     }
     return connectionStatus
   }
