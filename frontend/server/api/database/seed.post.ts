@@ -87,7 +87,7 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     console.error('Database seed error:', error)
     
-    if (error.statusCode) {
+    if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error
     }
     
