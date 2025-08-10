@@ -1,0 +1,119 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: personal-finance-manager
+  labels:
+    app: personal-finance-manager
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/client-name: gcloud
+spec:
+  template:
+    metadata:
+      labels:
+        app: personal-finance-manager
+      annotations:
+        # 自動擴展設定
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "10"
+        
+        # 資源配置
+        run.googleapis.com/memory: "1Gi"
+        run.googleapis.com/cpu: "1000m"
+        
+        # 執行環境設定
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/startup-cpu-boost: "true"
+        
+        # 客戶端標識
+        run.googleapis.com/client-name: gcloud
+    spec:
+      # 容器並發設定
+      containerConcurrency: 100
+      # 請求超時時間
+      timeoutSeconds: 300
+      # 服務帳戶
+      serviceAccountName: money-flow@money-flow-468508.iam.gserviceaccount.com
+      
+      containers:
+      - name: personal-finance-manager
+        image: a9293340/personal-finance-manager:latest
+        
+        ports:
+        - name: http1
+          containerPort: 3000
+        
+        env:
+        # 基本應用程式設定
+        - name: NODE_ENV
+          value: "production"
+        - name: NUXT_HOST
+          value: "0.0.0.0"
+        - name: NUXT_PORT
+          value: "3000"
+        
+        # 從 Secret Manager 讀取機密資料
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-uri
+              key: latest
+        
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: latest
+        
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: encryption-key
+              key: latest
+        
+        # JWT 過期時間
+        - name: JWT_EXPIRES_IN
+          value: "24h"
+        
+        # CORS 設定
+        - name: CORS_ORIGIN
+          value: "*"
+        
+        # 速率限制設定
+        - name: RATE_LIMIT_WINDOW_MS
+          value: "900000"
+        - name: RATE_LIMIT_MAX_REQUESTS
+          value: "100"
+        
+        # 日誌層級
+        - name: LOG_LEVEL
+          value: "info"
+        
+        # Google Cloud 專案設定
+        - name: GOOGLE_CLOUD_PROJECT_ID
+          value: "money-flow-468508"
+        
+        # 資源限制
+        resources:
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+        
+        # 簡化的健康檢查 - 增加延遲時間
+        livenessProbe:
+          httpGet:
+            path: /api/health/database
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        # 移除 startupProbe 先簡化問題
+  
+  traffic:
+  - percent: 100
+    latestRevision: true

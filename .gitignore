@@ -150,6 +150,11 @@ docker-compose.override.yml
 
 # Google Cloud
 gcp-key.json
+money-flow-gcp.json
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
 .gcloudignore
 
 # Terraform
@@ -208,6 +213,7 @@ scripts/temp-*
 scripts/setup-*
 scripts/migrate-*
 scripts/one-time-*
+scripts/backup/
 temp-script.*
 
 # ======================================
