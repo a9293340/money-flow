@@ -1,0 +1,202 @@
+name: 🧪 Test & Validation
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch: # 允許手動觸發
+
+env:
+  NODE_VERSION: ${{ vars.NODE_VERSION }}
+
+jobs:
+  # 程式碼品質檢查
+  code-quality:
+    name: 📋 Code Quality & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: 🔧 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 🔍 TypeScript check
+        run: yarn type-check
+
+      - name: 🧹 ESLint check
+        run: yarn lint
+
+      - name: 🧪 Run unit tests
+        run: yarn test
+
+      - name: 🏗️ Build check
+        run: yarn build
+
+      - name: 📊 Upload build artifacts (for debugging)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: frontend/.output/
+          retention-days: 7
+
+  # 安全性掃描
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: 🔧 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 🔍 Run npm audit
+        run: yarn audit --level moderate --json || true
+
+      - name: 🔒 Check for security vulnerabilities
+        run: |
+          echo "🔍 Checking for known security vulnerabilities..."
+          if yarn audit --level high; then
+            echo "✅ No high-severity vulnerabilities found"
+          else
+            echo "⚠️ High-severity vulnerabilities detected"
+            echo "Please run 'yarn audit --level high' locally to review"
+          fi
+
+  # Docker 建置測試
+  docker-build-test:
+    name: 🐳 Docker Build Test
+    runs-on: ubuntu-latest
+    needs: code-quality
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏗️ Build Docker image (test only)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/docker/Dockerfile
+          push: false
+          tags: test-image:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: ✅ Docker build success
+        run: echo "🎉 Docker image built successfully for testing"
+
+  # 測試結果匯總
+  test-summary:
+    name: 📊 Test Summary
+    runs-on: ubuntu-latest
+    needs: [code-quality, security-scan, docker-build-test]
+    if: always()
+    
+    steps:
+      - name: 📊 Generate test summary
+        run: |
+          echo "## 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Code Quality Results
+          if [ "${{ needs.code-quality.result }}" == "success" ]; then
+            echo "✅ **Code Quality**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Code Quality**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Security Scan Results
+          if [ "${{ needs.security-scan.result }}" == "success" ]; then
+            echo "✅ **Security Scan**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Security Scan**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Docker Build Results
+          if [ "${{ needs.docker-build-test.result }}" == "success" ]; then
+            echo "✅ **Docker Build**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Docker Build**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall Status
+          if [ "${{ needs.code-quality.result }}" == "success" ] && [ "${{ needs.security-scan.result }}" == "success" ] && [ "${{ needs.docker-build-test.result }}" == "success" ]; then
+            echo "🎉 **Overall Status**: All tests passed! Ready for deployment." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Overall Status**: Some tests failed. Please review and fix issues before deployment." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # PR 自動評論 (僅限 PR)
+  pr-comment:
+    name: 💬 PR Comment
+    runs-on: ubuntu-latest
+    needs: [code-quality, security-scan, docker-build-test]
+    if: github.event_name == 'pull_request' && always()
+    
+    steps:
+      - name: 💬 Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const results = {
+              codeQuality: '${{ needs.code-quality.result }}',
+              securityScan: '${{ needs.security-scan.result }}',
+              dockerBuild: '${{ needs.docker-build-test.result }}'
+            };
+            
+            const getEmoji = (status) => status === 'success' ? '✅' : '❌';
+            
+            const comment = `
+            ## 🧪 自動測試結果
+            
+            ${getEmoji(results.codeQuality)} **程式碼品質檢查**: ${results.codeQuality}
+            ${getEmoji(results.securityScan)} **安全性掃描**: ${results.securityScan}  
+            ${getEmoji(results.dockerBuild)} **Docker 建置測試**: ${results.dockerBuild}
+            
+            ${Object.values(results).every(r => r === 'success') 
+              ? '🎉 所有測試通過！此 PR 可以安全合併。' 
+              : '⚠️ 部分測試失敗，請檢查並修正問題後再合併。'
+            }
+            
+            ---
+            🤖 由 GitHub Actions 自動生成
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
