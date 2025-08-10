@@ -22,3 +22,29 @@ logs
 .env
 .env.*
 !.env.example
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+src-tauri/Cargo.lock
+
+# Android SDK (本地開發用)
+android-sdk/
+*.keystore
+
+# Android 建置輸出
+*.apk
+*.aab
+*.dex
+*.class
+
+# IDE 暫存檔
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+
+# 系統檔案
+Thumbs.db
+.DS_Store
