@@ -16,6 +16,9 @@ env:
   
   # Node.js 版本
   NODE_VERSION: ${{ vars.NODE_VERSION }}
+  
+  # 應用程式 URL（支援自定義域名）
+  SERVICE_URL: ${{ vars.SERVICE_URL }}
 
 jobs:
   # 程式碼品質檢查
@@ -164,50 +167,29 @@ jobs:
             --region=${{ env.CLOUD_RUN_REGION }} \
             --project=${{ env.GCP_PROJECT_ID }}
 
-      - name: 🌐 Get service URL
+      - name: 🌐 Set service URL
         id: url
         run: |
-          echo "🔍 Getting service URL for ${{ env.CLOUD_RUN_SERVICE }} in region ${{ env.CLOUD_RUN_REGION }}"
+          SERVICE_URL="${{ env.SERVICE_URL }}"
+          echo "🌍 Using configured service URL: $SERVICE_URL"
           
-          # 先檢查服務是否存在
-          if gcloud run services describe ${{ env.CLOUD_RUN_SERVICE }} \
-            --region=${{ env.CLOUD_RUN_REGION }} \
-            --project=${{ env.GCP_PROJECT_ID }} \
-            --quiet >/dev/null 2>&1; then
-            echo "✅ Service found"
-          else
-            echo "❌ Service not found!"
-            echo "🔧 Listing all services:"
-            gcloud run services list --region=${{ env.CLOUD_RUN_REGION }} --project=${{ env.GCP_PROJECT_ID }}
+          # 驗證 URL 不為空
+          if [ -z "$SERVICE_URL" ]; then
+            echo "❌ SERVICE_URL variable is not set!"
+            echo "🔧 Please add SERVICE_URL to GitHub Variables"
+            echo "   Example: https://your-service.asia-east1.run.app"
             exit 1
           fi
           
-          # 獲取服務 URL
-          SERVICE_URL=$(gcloud run services describe ${{ env.CLOUD_RUN_SERVICE }} \
-            --region=${{ env.CLOUD_RUN_REGION }} \
-            --project=${{ env.GCP_PROJECT_ID }} \
-            --format='value(status.url)' 2>/dev/null)
-          
-          # 檢查 URL 是否為空
-          if [ -z "$SERVICE_URL" ]; then
-            echo "❌ Failed to get service URL!"
-            echo "🔧 Debug: Service description:"
-            gcloud run services describe ${{ env.CLOUD_RUN_SERVICE }} \
-              --region=${{ env.CLOUD_RUN_REGION }} \
-              --project=${{ env.GCP_PROJECT_ID }}
-            exit 1
+          # 驗證 URL 格式
+          if [[ $SERVICE_URL =~ ^https://.*$ ]]; then
+            echo "✅ Valid HTTPS URL format"
+          else
+            echo "⚠️ URL should start with https://"
           fi
           
           # 設置輸出變數
           echo "service_url=$SERVICE_URL" >> $GITHUB_OUTPUT
-          echo "🌍 Service URL: $SERVICE_URL"
-          
-          # 驗證 URL 格式
-          if [[ $SERVICE_URL =~ ^https://.*\.run\.app$ ]]; then
-            echo "✅ Valid Cloud Run URL format"
-          else
-            echo "⚠️ Unexpected URL format: $SERVICE_URL"
-          fi
 
     outputs:
       service-url: ${{ steps.url.outputs.service_url }}
@@ -224,20 +206,12 @@ jobs:
           echo "🔍 Testing basic application health..."
           SERVICE_URL="${{ needs.deploy.outputs.service-url }}"
           
-          # 檢查 SERVICE_URL 是否為空
-          if [ -z "$SERVICE_URL" ]; then
-            echo "❌ SERVICE_URL is empty!"
-            echo "🔧 Debug info:"
-            echo "deploy job outputs: ${{ toJSON(needs.deploy.outputs) }}"
-            exit 1
-          fi
-          
           echo "📍 Service URL: $SERVICE_URL"
           echo "🎯 Testing URL: $SERVICE_URL/api/health"
           
           # 等待應用程式启動
           echo "⏳ Waiting for application to be ready..."
-          sleep 30
+          sleep 45
           
           # 多次嘗試健康檢查
           for i in {1..3}; do
@@ -250,14 +224,14 @@ jobs:
             else
               echo "⚠️ Attempt $i failed"
               if [ $i -lt 3 ]; then
-                echo "💤 Waiting 15 seconds before retry..."
-                sleep 15
+                echo "💤 Waiting 20 seconds before retry..."
+                sleep 20
               fi
             fi
           done
           
           echo "❌ Basic health check failed after 3 attempts"
-          echo "🔧 Attempting to get more information..."
+          echo "🔧 Final attempt with verbose output:"
           curl -v "$SERVICE_URL/api/health" || echo "Connection failed"
           exit 1
 
