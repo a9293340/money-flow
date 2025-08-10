@@ -66,7 +66,7 @@ RUN \
 COPY --from=builder --chown=nuxtjs:nodejs /app/.output ./.output
 
 # Copy health check script
-COPY --chown=nuxtjs:nodejs ./docker/healthcheck.sh ./healthcheck.sh
+COPY --chown=nuxtjs:nodejs docker/healthcheck.sh ./healthcheck.sh
 RUN chmod +x ./healthcheck.sh
 
 # Create necessary directories and set permissions
