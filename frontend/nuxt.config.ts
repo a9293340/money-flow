@@ -44,15 +44,29 @@ export default defineNuxtConfig({
 
   // Runtime 配置
   runtimeConfig: {
-    // Server-side 環境變數 (只在 server 端可用)
+    // Server-side 環境變數 (只在 server 端可用) - 🔴 高機密
     mongodbUri: process.env.MONGODB_URI,
     jwtSecret: process.env.JWT_SECRET,
     encryptionKey: process.env.ENCRYPTION_KEY,
+    
+    // 外部服務 API - 🟡 中機密
+    exchangeRateApiKey: process.env.EXCHANGE_RATE_API_KEY,
+    fcmServerKey: process.env.FCM_SERVER_KEY,
+    gcsServiceAccountKey: process.env.GCS_SERVICE_ACCOUNT_KEY,
+    gcsBucketName: process.env.GCS_BUCKET_NAME,
+    
+    // 快取和監控 - 🟢 低機密
+    redisUrl: process.env.REDIS_URL,
+    logLevel: process.env.LOG_LEVEL || 'info',
+    enableDebugMode: process.env.ENABLE_DEBUG_MODE === 'true',
 
     // Public 環境變數 (client 和 server 都可用)
     public: {
       appName: process.env.APP_NAME || 'Money Flow',
-      apiUrl: process.env.API_URL || '',
+      appUrl: process.env.APP_URL || 'http://localhost:3000',
+      apiUrl: process.env.API_URL || '/api',
+      nodeEnv: process.env.NODE_ENV || 'development',
+      enableApiDocs: process.env.ENABLE_API_DOCS === 'true'
     },
   },
   compatibilityDate: '2025-07-15',

@@ -191,6 +191,167 @@ gcloud run deploy personal-finance-manager
 
 ---
 
+## 🔐 環境變數管理規範
+
+### 環境變數機密程度分級
+- **🔴 高機密**: 絕對不能洩露的資料，包含認證資訊
+- **🟡 中機密**: 服務 API 金鑰，洩露會影響功能但不會直接危害安全
+- **🟢 低機密**: 配置參數，洩露不會造成安全問題
+
+### 環境變數管理流程
+
+#### 1. 開發環境設定
+```bash
+# 複製範例檔案
+cp .env.example .env
+
+# 編輯環境變數（使用實際值）
+nano .env
+```
+
+#### 2. 新增環境變數的標準流程
+當需要新增環境變數時：
+
+**步驟一：更新 `.env.example`**
+```bash
+# 在對應的機密程度區塊中新增
+# 🔴 高機密區塊 - 絕不能提交實際值
+NEW_SECRET_KEY=your-secret-key-placeholder
+
+# 🟡 中機密區塊 - 使用示例值
+API_KEY=your-api-key-example
+
+# 🟢 低機密區塊 - 可使用實際預設值
+LOG_LEVEL=info
+```
+
+**步驟二：更新 `nuxt.config.ts`**
+```typescript
+runtimeConfig: {
+  // Server-side (機密)
+  newSecretKey: process.env.NEW_SECRET_KEY,
+  
+  // Public (非機密)
+  public: {
+    newPublicConfig: process.env.NEW_PUBLIC_CONFIG || 'default'
+  }
+}
+```
+
+**步驟三：確保正確的 `.gitignore` 設定**
+```bash
+# 確認 .env 被忽略
+echo ".env" >> .gitignore
+echo ".env.local" >> .gitignore
+echo ".env.production" >> .gitignore
+```
+
+#### 3. Cloud Run 部署環境變數管理
+
+**🔴 高機密變數 - 使用 Google Secret Manager**
+```yaml
+# Cloud Run 設定
+env:
+  - name: MONGODB_URI
+    valueFrom:
+      secretKeyRef:
+        name: mongodb-uri
+        key: latest
+  - name: JWT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: jwt-secret
+        key: latest
+```
+
+**🟡 中機密變數 - 使用 Cloud Run 環境變數**
+```bash
+# 使用 gcloud CLI 設定
+gcloud run services update money-flow \
+  --set-env-vars="EXCHANGE_RATE_API_KEY=your-key"
+```
+
+**🟢 低機密變數 - 直接在 Cloud Run YAML 設定**
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+      - env:
+        - name: NODE_ENV
+          value: "production"
+        - name: LOG_LEVEL
+          value: "info"
+```
+
+#### 4. Secret Manager 操作指令
+
+**建立 Secret**
+```bash
+# 建立 MongoDB 連接字串
+echo "mongodb+srv://user:pass@cluster.mongodb.net/db" | \
+  gcloud secrets create mongodb-uri --data-file=-
+
+# 建立 JWT 密鑰
+openssl rand -base64 32 | \
+  gcloud secrets create jwt-secret --data-file=-
+```
+
+**更新 Secret**
+```bash
+# 更新現有 Secret
+echo "new-secret-value" | \
+  gcloud secrets versions add mongodb-uri --data-file=-
+```
+
+**給予 Cloud Run 存取權限**
+```bash
+# 給予服務帳戶存取權限
+gcloud secrets add-iam-policy-binding mongodb-uri \
+  --member="serviceAccount:service-account@project.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+### 環境變數使用最佳實踐
+
+#### 1. 在程式碼中使用
+```typescript
+// ✅ 正確使用方式
+const config = useRuntimeConfig()
+const mongoUri = config.mongodbUri
+
+// ❌ 錯誤使用方式
+const mongoUri = process.env.MONGODB_URI // 只能在 server 端使用
+```
+
+#### 2. 環境變數命名規範
+```bash
+# 使用大寫和底線
+MONGODB_URI=...
+JWT_SECRET=...
+EXCHANGE_RATE_API_KEY=...
+
+# 相關變數使用相同前綴
+GCS_SERVICE_ACCOUNT_KEY=...
+GCS_BUCKET_NAME=...
+```
+
+#### 3. 預設值設定
+```typescript
+// 為非必要變數提供合理預設值
+logLevel: process.env.LOG_LEVEL || 'info',
+enableDebugMode: process.env.ENABLE_DEBUG_MODE === 'true',
+```
+
+### 安全注意事項
+
+1. **絕不在程式碼中硬編碼機密資訊**
+2. **定期輪換 API 金鑰和密碼**
+3. **使用最小權限原則設定 API 金鑰**
+4. **監控環境變數的使用情況**
+
+---
+
 ## 📝 Commit 訊息規範
 
 ### 格式
