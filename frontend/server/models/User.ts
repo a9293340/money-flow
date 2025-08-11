@@ -1,6 +1,7 @@
 import type { Document } from 'mongoose'
 import mongoose, { Schema } from 'mongoose'
 import validator from 'validator'
+import bcrypt from 'bcrypt'
 
 export interface IUser extends Document {
   email: string
@@ -109,10 +110,24 @@ userSchema.index({ email: 1 }, { unique: true })
 userSchema.index({ emailVerificationToken: 1 }, { sparse: true })
 userSchema.index({ passwordResetToken: 1 }, { sparse: true })
 
-// 中介軟體
-userSchema.pre('save', function (next) {
-  this.updatedAt = new Date()
-  next()
+// 密碼加密中介軟體
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) {
+    this.updatedAt = new Date()
+    return next()
+  }
+  
+  try {
+    const saltRounds = 12
+    this.password = await bcrypt.hash(this.password, saltRounds)
+    this.updatedAt = new Date()
+    next()
+  } catch (error: any) {
+    next(error)
+  }
 })
 
-export default mongoose.models.User || mongoose.model<IUser>('User', userSchema)
+const User = mongoose.models.User || mongoose.model<IUser>('User', userSchema)
+
+export { User }
+export default User
