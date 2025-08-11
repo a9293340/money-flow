@@ -70,7 +70,7 @@ export default defineNuxtConfig({
     public: {
       appName: process.env.APP_NAME || 'Money Flow',
       appUrl: process.env.APP_URL || 'http://localhost:3000',
-      apiUrl: process.env.API_URL || '/api',
+      apiUrl: process.env.API_URL || (process.env.NODE_ENV === 'production' ? 'https://personal-finance-manager-266039927960.asia-east1.run.app/api' : '/api'),
       nodeEnv: process.env.NODE_ENV || 'development',
       enableApiDocs: process.env.ENABLE_API_DOCS === 'true',
     },
