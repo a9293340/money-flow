@@ -10,7 +10,7 @@ interface MongoConnection {
 }
 
 const connection: MongoConnection = {
-  isConnected: false
+  isConnected: false,
 }
 
 /**
@@ -34,40 +34,40 @@ export async function connectMongoDB(): Promise<void> {
     const options = {
       // 緩衝相關設定
       bufferCommands: false,
-      
+
       // 連接超時設定
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      
+
       // 自動索引管理
-      autoIndex: process.env.NODE_ENV !== 'production'
+      autoIndex: process.env.NODE_ENV !== 'production',
     }
 
     // 建立連接
     console.log('🔄 正在連接 MongoDB...')
     await mongoose.connect(mongoUri, options)
-    
+
     connection.isConnected = true
     console.log('✅ MongoDB 連接成功')
-    
+
     // 監聽連接事件
     mongoose.connection.on('error', (error) => {
       console.error('❌ MongoDB 連接錯誤:', error)
       connection.isConnected = false
     })
-    
+
     mongoose.connection.on('disconnected', () => {
       console.warn('⚠️ MongoDB 連接斷開')
       connection.isConnected = false
     })
-    
+
     mongoose.connection.on('reconnected', () => {
       console.log('🔄 MongoDB 重新連接成功')
       connection.isConnected = true
     })
-    
-  } catch (error) {
+  }
+  catch (error) {
     console.error('❌ MongoDB 連接失敗:', error)
     connection.isConnected = false
     throw error
@@ -84,7 +84,8 @@ export async function disconnectMongoDB(): Promise<void> {
       connection.isConnected = false
       console.log('✅ MongoDB 連接已斷開')
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('❌ MongoDB 斷開連接時發生錯誤:', error)
     throw error
   }
@@ -106,6 +107,6 @@ export function getConnectionStats() {
     readyState: mongoose.connection.readyState,
     host: mongoose.connection.host,
     port: mongoose.connection.port,
-    name: mongoose.connection.name
+    name: mongoose.connection.name,
   }
 }

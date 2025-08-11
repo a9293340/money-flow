@@ -30,13 +30,13 @@ const TOKEN_CONFIG = {
   access: {
     expiresIn: '15m' as const,
     cookieName: 'access_token',
-    maxAge: 15 * 60 * 1000 // 15 分鐘
+    maxAge: 15 * 60 * 1000, // 15 分鐘
   },
   refresh: {
     expiresIn: '7d' as const,
-    cookieName: 'refresh_token', 
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 天
-  }
+    cookieName: 'refresh_token',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
+  },
 }
 
 /**
@@ -44,7 +44,7 @@ const TOKEN_CONFIG = {
  */
 export function generateAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
   const config = useRuntimeConfig()
-  
+
   if (!config.jwtSecret) {
     throw new Error('JWT_SECRET 未設定')
   }
@@ -52,9 +52,9 @@ export function generateAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): s
   const options: SignOptions = {
     expiresIn: TOKEN_CONFIG.access.expiresIn,
     issuer: 'money-flow',
-    audience: 'money-flow-users'
+    audience: 'money-flow-users',
   }
-  
+
   return jwt.sign(payload, config.jwtSecret as string, options)
 }
 
@@ -63,7 +63,7 @@ export function generateAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): s
  */
 export function generateRefreshToken(payload: Omit<RefreshTokenPayload, 'iat' | 'exp'>): string {
   const config = useRuntimeConfig()
-  
+
   if (!config.jwtSecret) {
     throw new Error('JWT_SECRET 未設定')
   }
@@ -71,9 +71,9 @@ export function generateRefreshToken(payload: Omit<RefreshTokenPayload, 'iat' | 
   const options: SignOptions = {
     expiresIn: TOKEN_CONFIG.refresh.expiresIn,
     issuer: 'money-flow',
-    audience: 'money-flow-refresh'
+    audience: 'money-flow-refresh',
   }
-  
+
   return jwt.sign(payload, config.jwtSecret as string, options)
 }
 
@@ -82,7 +82,7 @@ export function generateRefreshToken(payload: Omit<RefreshTokenPayload, 'iat' | 
  */
 export function verifyAccessToken(token: string): JWTPayload {
   const config = useRuntimeConfig()
-  
+
   if (!config.jwtSecret) {
     throw new Error('JWT_SECRET 未設定')
   }
@@ -90,19 +90,22 @@ export function verifyAccessToken(token: string): JWTPayload {
   try {
     const options: VerifyOptions = {
       issuer: 'money-flow',
-      audience: 'money-flow-users'
+      audience: 'money-flow-users',
     }
-    
+
     const decoded = jwt.verify(token, config.jwtSecret as string, options) as JWTPayload
 
     return decoded
-  } catch (error: any) {
-    if (error.name === 'TokenExpiredError') {
+  }
+  catch (error: unknown) {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'TokenExpiredError') {
       throw new Error('Access token 已過期')
-    } else if (error.name === 'JsonWebTokenError') {
+    }
+    else if (error && typeof error === 'object' && 'name' in error && error.name === 'JsonWebTokenError') {
       throw new Error('無效的 access token')
-    } else {
-      throw new Error(`Token 驗證失敗: ${error.message}`)
+    }
+    else {
+      throw new Error(`Token 驗證失敗: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 }
@@ -112,7 +115,7 @@ export function verifyAccessToken(token: string): JWTPayload {
  */
 export function verifyRefreshToken(token: string): RefreshTokenPayload {
   const config = useRuntimeConfig()
-  
+
   if (!config.jwtSecret) {
     throw new Error('JWT_SECRET 未設定')
   }
@@ -120,19 +123,22 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload {
   try {
     const options: VerifyOptions = {
       issuer: 'money-flow',
-      audience: 'money-flow-refresh'
+      audience: 'money-flow-refresh',
     }
-    
+
     const decoded = jwt.verify(token, config.jwtSecret as string, options) as RefreshTokenPayload
 
     return decoded
-  } catch (error: any) {
-    if (error.name === 'TokenExpiredError') {
+  }
+  catch (error: unknown) {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'TokenExpiredError') {
       throw new Error('Refresh token 已過期')
-    } else if (error.name === 'JsonWebTokenError') {
+    }
+    else if (error && typeof error === 'object' && 'name' in error && error.name === 'JsonWebTokenError') {
       throw new Error('無效的 refresh token')
-    } else {
-      throw new Error(`Refresh token 驗證失敗: ${error.message}`)
+    }
+    else {
+      throw new Error(`Refresh token 驗證失敗: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 }
@@ -143,7 +149,8 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload {
 export function decodeToken(token: string): JWTPayload | RefreshTokenPayload | null {
   try {
     return jwt.decode(token) as JWTPayload | RefreshTokenPayload
-  } catch {
+  }
+  catch {
     return null
   }
 }
@@ -154,13 +161,13 @@ export function decodeToken(token: string): JWTPayload | RefreshTokenPayload | n
 function getCookieOptions(isRefreshToken = false) {
   const config = useRuntimeConfig()
   const isDevelopment = config.public.nodeEnv === 'development'
-  
+
   return {
     httpOnly: true,
     secure: !isDevelopment, // 開發環境可使用 HTTP
     sameSite: 'lax' as const,
     maxAge: isRefreshToken ? TOKEN_CONFIG.refresh.maxAge : TOKEN_CONFIG.access.maxAge,
-    path: '/'
+    path: '/',
   }
 }
 
@@ -170,7 +177,7 @@ function getCookieOptions(isRefreshToken = false) {
 export function setAuthCookies(event: H3Event, accessToken: string, refreshToken: string) {
   // 設定 Access Token Cookie
   setCookie(event, TOKEN_CONFIG.access.cookieName, accessToken, getCookieOptions(false))
-  
+
   // 設定 Refresh Token Cookie
   setCookie(event, TOKEN_CONFIG.refresh.cookieName, refreshToken, getCookieOptions(true))
 }
@@ -182,13 +189,13 @@ export function clearAuthCookies(event: H3Event) {
   // 清除 Access Token Cookie
   deleteCookie(event, TOKEN_CONFIG.access.cookieName, {
     path: '/',
-    httpOnly: true
+    httpOnly: true,
   })
-  
+
   // 清除 Refresh Token Cookie
   deleteCookie(event, TOKEN_CONFIG.refresh.cookieName, {
     path: '/',
-    httpOnly: true
+    httpOnly: true,
   })
 }
 
@@ -197,18 +204,18 @@ export function clearAuthCookies(event: H3Event) {
  */
 export function getAccessTokenFromEvent(event: H3Event): string | undefined {
   // 1. 優先從 Cookie 取得
-  let token = getCookie(event, TOKEN_CONFIG.access.cookieName)
-  
+  const token = getCookie(event, TOKEN_CONFIG.access.cookieName)
+
   if (token) {
     return token
   }
-  
+
   // 2. 從 Authorization Header 取得 (Bearer token)
   const authHeader = getHeader(event, 'authorization')
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7)
   }
-  
+
   return undefined
 }
 
@@ -233,12 +240,13 @@ export function isTokenExpiringSoon(token: string): boolean {
   try {
     const decoded = decodeToken(token) as JWTPayload
     if (!decoded || !decoded.exp) return true
-    
+
     const now = Math.floor(Date.now() / 1000)
     const fiveMinutesFromNow = now + (5 * 60)
-    
+
     return decoded.exp < fiveMinutesFromNow
-  } catch {
+  }
+  catch {
     return true
   }
 }
@@ -257,7 +265,7 @@ export const jwtUtils = {
   getAccessTokenFromEvent,
   getRefreshTokenFromEvent,
   generateTokenId,
-  isTokenExpiringSoon
+  isTokenExpiringSoon,
 }
 
 export default jwtUtils

@@ -22,6 +22,7 @@ Personal Finance Manager 是一個跨平台的個人財務管理應用程式，�
 docs/
 ├── project_overview.md          # 專案概覽和目標
 ├── technical_architecture.md    # 技術架構設計  
+├── authentication_system.md     # 認證系統設計和安全規範
 ├── database_schema.md           # 資料庫設計
 ├── api_specification.md         # API 規格文檔
 ├── user_stories.md              # 使用者需求故事
@@ -32,7 +33,7 @@ docs/
 ```
 
 ### 文檔權威性等級
-1. **🔴 必須遵循**: `project_overview.md`, `technical_architecture.md`
+1. **🔴 必須遵循**: `project_overview.md`, `technical_architecture.md`, `authentication_system.md`
 2. **🟡 開發參考**: `frontend_development_guide.md`, `database_schema.md`, `api_specification.md`
 3. **🟢 操作指南**: `tauri_mobile_setup.md`, `app_store_publishing.md`, `deployment_guide.md`
 
@@ -52,6 +53,9 @@ docs/
 - **新增 API 端點** → 更新 `api_specification.md`
 - **修改資料庫 Schema** → 更新 `database_schema.md` 
 - **變更技術棧或架構** → 更新 `technical_architecture.md`
+- **修改認證機制或安全策略** → 更新 `authentication_system.md`
+- **新增認證相關 API 或中間件** → 更新 `authentication_system.md` + `api_specification.md`
+- **變更 JWT 策略或 Token 儲存方式** → 更新 `authentication_system.md`
 - **新增前端元件或流程** → 更新 `frontend_development_guide.md`
 - **修改部署流程** → 更新 `deployment_guide.md`
 - **調整 Tauri 配置** → 更新 `tauri_mobile_setup.md`
@@ -418,6 +422,7 @@ docs: 更新 api_specification.md 中的記錄管理端點
 - [Google Cloud Run 文檔](https://cloud.google.com/run/docs)
 
 ### 內部文檔快速查找
+- **需要認證和安全設計** → `docs/authentication_system.md`
 - **需要 API 資訊** → `docs/api_specification.md`
 - **需要資料庫結構** → `docs/database_schema.md`  
 - **需要前端開發規範** → `docs/frontend_development_guide.md`
@@ -429,5 +434,5 @@ docs: 更新 api_specification.md 中的記錄管理端點
 
 **記住：這是一個有明確目標的商業專案，所有決策都必須朝向成功上架應用商店的目標前進！**
 
-最後更新時間: 2024-08-09
-版本: 1.0.0
+最後更新時間: 2024-08-10
+版本: 1.1.0

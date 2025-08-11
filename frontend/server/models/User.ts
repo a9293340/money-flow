@@ -116,14 +116,15 @@ userSchema.pre('save', async function (next) {
     this.updatedAt = new Date()
     return next()
   }
-  
+
   try {
     const saltRounds = 12
     this.password = await bcrypt.hash(this.password, saltRounds)
     this.updatedAt = new Date()
     next()
-  } catch (error: any) {
-    next(error)
+  }
+  catch (error: unknown) {
+    next(error instanceof Error ? error : new Error(String(error)))
   }
 })
 
