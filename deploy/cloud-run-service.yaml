@@ -57,19 +57,19 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: mongodb-uri
-                  key: mongodb-uri
+                  key: latest
 
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: jwt-secret
-                  key: jwt-secret
+                  key: latest
 
             - name: ENCRYPTION_KEY
               valueFrom:
                 secretKeyRef:
                   name: encryption-key
-                  key: encryption-key
+                  key: latest
 
             # JWT 過期時間
             - name: JWT_EXPIRES_IN
