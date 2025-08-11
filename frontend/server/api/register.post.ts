@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { connectMongoDB } from '~/lib/mongodb'
-import { User } from '~/server/models/User'
+import { User } from '~/lib/models/user'
 
 // 註冊驗證 Schema
 const registerSchema = z.object({
@@ -42,15 +42,26 @@ export default defineEventHandler(async (event) => {
     // 建立新使用者
     const newUser = new User({
       email: email.toLowerCase(),
-      password, // 密碼會在 User model 的 pre save 中自動加密
-      name,
-      preferences: {
-        currency: 'TWD',
-        theme: 'light',
-        language: 'zh-TW',
+      passwordHash: password, // 密碼會在 User model 的 pre save 中自動加密
+      profile: {
+        name,
+        preferences: {
+          currency: 'TWD',
+          theme: 'system',
+          language: 'zh-TW',
+          notifications: {
+            budgetAlerts: true,
+            dailyReminders: false,
+            weeklyReports: true,
+            emailNotifications: true,
+            pushNotifications: true,
+          },
+        },
       },
-      isActive: true,
-      emailVerified: false,
+      security: {
+        loginAttempts: 0,
+        emailVerified: false,
+      },
     })
 
     // 儲存到資料庫
@@ -64,8 +75,8 @@ export default defineEventHandler(async (event) => {
         user: {
           id: savedUser._id,
           email: savedUser.email,
-          name: savedUser.name,
-          emailVerified: savedUser.emailVerified,
+          name: savedUser.profile.name,
+          emailVerified: savedUser.security.emailVerified,
         },
       },
     }

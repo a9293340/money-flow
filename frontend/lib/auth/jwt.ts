@@ -25,32 +25,87 @@ export interface RefreshTokenPayload {
   exp?: number
 }
 
-// Token 配置
-const TOKEN_CONFIG = {
-  access: {
-    expiresIn: '15m' as const,
-    cookieName: 'access_token',
-    maxAge: 15 * 60 * 1000, // 15 分鐘
-  },
-  refresh: {
-    expiresIn: '7d' as const,
-    cookieName: 'refresh_token',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
-  },
+// 客戶端平台類型
+export type ClientPlatform = 'web' | 'mobile'
+
+// Token 配置 - 根據平台動態設定
+const getTokenConfig = (platform: ClientPlatform) => {
+  if (platform === 'mobile') {
+    return {
+      access: {
+        expiresIn: '1h' as const,
+        cookieName: 'access_token',
+        maxAge: 60 * 60 * 1000, // 1 小時
+      },
+      refresh: {
+        expiresIn: '30d' as const,
+        cookieName: 'refresh_token',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 天
+      },
+    }
+  }
+  
+  // Web 預設設定
+  return {
+    access: {
+      expiresIn: '15m' as const,
+      cookieName: 'access_token',
+      maxAge: 15 * 60 * 1000, // 15 分鐘
+    },
+    refresh: {
+      expiresIn: '7d' as const,
+      cookieName: 'refresh_token',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
+    },
+  }
+}
+
+// 舊版 TOKEN_CONFIG 保持向後相容
+const TOKEN_CONFIG = getTokenConfig('web')
+
+/**
+ * 檢測客戶端平台類型
+ */
+export function detectClientPlatform(event: H3Event): ClientPlatform {
+  // 1. 優先檢查自定義 Header
+  const clientPlatform = getHeader(event, 'x-client-platform')?.toLowerCase()
+  if (clientPlatform === 'mobile' || clientPlatform === 'web') {
+    return clientPlatform as ClientPlatform
+  }
+  
+  // 2. 檢查 User-Agent 中的 Tauri 特徵
+  const userAgent = getHeader(event, 'user-agent') || ''
+  
+  // Tauri 應用的 User-Agent 特徵檢測
+  const tauriFeatures = [
+    'tauri',           // Tauri 標識
+    'money-flow',      // 我們的應用名稱
+    'wry',             // Tauri 使用的 WebView 引擎
+  ]
+  
+  const isMobile = tauriFeatures.some(feature => 
+    userAgent.toLowerCase().includes(feature)
+  )
+  
+  return isMobile ? 'mobile' : 'web'
 }
 
 /**
- * 產生 Access Token
+ * 產生 Access Token (支援動態平台設定)
  */
-export function generateAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
+export function generateAccessToken(
+  payload: Omit<JWTPayload, 'iat' | 'exp'>, 
+  platform: ClientPlatform = 'web'
+): string {
   const config = useRuntimeConfig()
 
   if (!config.jwtSecret) {
     throw new Error('JWT_SECRET 未設定')
   }
 
+  const tokenConfig = getTokenConfig(platform)
   const options: SignOptions = {
-    expiresIn: TOKEN_CONFIG.access.expiresIn,
+    expiresIn: tokenConfig.access.expiresIn,
     issuer: 'money-flow',
     audience: 'money-flow-users',
   }
@@ -59,17 +114,21 @@ export function generateAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): s
 }
 
 /**
- * 產生 Refresh Token
+ * 產生 Refresh Token (支援動態平台設定)
  */
-export function generateRefreshToken(payload: Omit<RefreshTokenPayload, 'iat' | 'exp'>): string {
+export function generateRefreshToken(
+  payload: Omit<RefreshTokenPayload, 'iat' | 'exp'>, 
+  platform: ClientPlatform = 'web'
+): string {
   const config = useRuntimeConfig()
 
   if (!config.jwtSecret) {
     throw new Error('JWT_SECRET 未設定')
   }
 
+  const tokenConfig = getTokenConfig(platform)
   const options: SignOptions = {
-    expiresIn: TOKEN_CONFIG.refresh.expiresIn,
+    expiresIn: tokenConfig.refresh.expiresIn,
     issuer: 'money-flow',
     audience: 'money-flow-refresh',
   }
@@ -156,44 +215,54 @@ export function decodeToken(token: string): JWTPayload | RefreshTokenPayload | n
 }
 
 /**
- * 設定 Cookie 選項
+ * 設定 Cookie 選項 (支援動態平台設定)
  */
-function getCookieOptions(isRefreshToken = false) {
+function getCookieOptions(isRefreshToken = false, platform: ClientPlatform = 'web') {
   const config = useRuntimeConfig()
   const isDevelopment = config.public.nodeEnv === 'development'
+  const tokenConfig = getTokenConfig(platform)
 
   return {
     httpOnly: true,
     secure: !isDevelopment, // 開發環境可使用 HTTP
     sameSite: 'lax' as const,
-    maxAge: isRefreshToken ? TOKEN_CONFIG.refresh.maxAge : TOKEN_CONFIG.access.maxAge,
+    maxAge: isRefreshToken ? tokenConfig.refresh.maxAge : tokenConfig.access.maxAge,
     path: '/',
   }
 }
 
 /**
- * 設定認證 Cookies
+ * 設定認證 Cookies (支援動態平台設定)
  */
-export function setAuthCookies(event: H3Event, accessToken: string, refreshToken: string) {
+export function setAuthCookies(
+  event: H3Event, 
+  accessToken: string, 
+  refreshToken: string, 
+  platform: ClientPlatform = 'web'
+) {
+  const tokenConfig = getTokenConfig(platform)
+  
   // 設定 Access Token Cookie
-  setCookie(event, TOKEN_CONFIG.access.cookieName, accessToken, getCookieOptions(false))
+  setCookie(event, tokenConfig.access.cookieName, accessToken, getCookieOptions(false, platform))
 
   // 設定 Refresh Token Cookie
-  setCookie(event, TOKEN_CONFIG.refresh.cookieName, refreshToken, getCookieOptions(true))
+  setCookie(event, tokenConfig.refresh.cookieName, refreshToken, getCookieOptions(true, platform))
 }
 
 /**
- * 清除認證 Cookies
+ * 清除認證 Cookies (支援動態平台設定)
  */
-export function clearAuthCookies(event: H3Event) {
+export function clearAuthCookies(event: H3Event, platform: ClientPlatform = 'web') {
+  const tokenConfig = getTokenConfig(platform)
+  
   // 清除 Access Token Cookie
-  deleteCookie(event, TOKEN_CONFIG.access.cookieName, {
+  deleteCookie(event, tokenConfig.access.cookieName, {
     path: '/',
     httpOnly: true,
   })
 
   // 清除 Refresh Token Cookie
-  deleteCookie(event, TOKEN_CONFIG.refresh.cookieName, {
+  deleteCookie(event, tokenConfig.refresh.cookieName, {
     path: '/',
     httpOnly: true,
   })

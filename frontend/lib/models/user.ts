@@ -69,7 +69,15 @@ const userSchema = new Schema<IUser>({
   passwordHash: {
     type: String,
     required: [true, '密碼為必填欄位'],
-    minlength: [60, '密碼雜湊長度不正確'],
+    validate: {
+      validator: function (v: string) {
+        // 如果是 bcrypt hash (以 $2 開頭且長度 60) 則通過驗證
+        if (v.startsWith('$2') && v.length === 60) return true
+        // 如果是純文字密碼 (將被 pre-save hook 加密) 則需要至少 8 個字元
+        return v.length >= 8
+      },
+      message: '密碼至少需要 8 個字元',
+    },
   },
 
   profile: {

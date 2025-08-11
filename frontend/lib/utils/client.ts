@@ -1,10 +1,13 @@
 /**
  * 客戶端工具函數
- * 處理客戶端相關的資訊擷取
+ * 處理客戶端相關的資訊擷取和平台檢測
  */
 
 import type { H3Event } from 'h3'
 import { getHeader } from 'h3'
+
+// 客戶端平台類型
+export type ClientPlatform = 'web' | 'mobile'
 
 /**
  * 從 H3Event 取得客戶端 IP 位址
@@ -110,4 +113,101 @@ export function isPrivateIP(ip: string): boolean {
   ]
 
   return privateRanges.some(range => range.test(ip))
+}
+
+// ===== 客戶端平台檢測功能 =====
+
+/**
+ * 檢測當前運行環境 (瀏覽器端使用)
+ * @returns 客戶端平台類型
+ */
+export function detectCurrentPlatform(): ClientPlatform {
+  // 檢查是否在 Tauri 環境中運行
+  if (typeof window !== 'undefined' && (window as Record<string, unknown>).__TAURI__) {
+    return 'mobile'
+  }
+
+  // 檢查 User-Agent 中的 Tauri 特徵
+  if (typeof navigator !== 'undefined') {
+    const userAgent = navigator.userAgent.toLowerCase()
+    const tauriFeatures = ['tauri', 'money-flow', 'wry']
+
+    if (tauriFeatures.some(feature => userAgent.includes(feature))) {
+      return 'mobile'
+    }
+  }
+
+  return 'web'
+}
+
+/**
+ * 獲取 API 請求的預設 headers (瀏覽器端使用)
+ * @returns 包含平台標識的 headers
+ */
+export function getApiHeaders(): HeadersInit {
+  const platform = detectCurrentPlatform()
+
+  return {
+    'Content-Type': 'application/json',
+    'X-Client-Platform': platform,
+  }
+}
+
+/**
+ * 創建包含認證資訊的 fetch 選項 (瀏覽器端使用)
+ * @param options 額外的 fetch 選項
+ * @returns 完整的 fetch 選項
+ */
+export function createApiRequest(options: RequestInit = {}): RequestInit {
+  const defaultHeaders = getApiHeaders()
+
+  return {
+    credentials: 'include', // 包含 cookies
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...(options.headers || {}),
+    },
+  }
+}
+
+/**
+ * 封裝的 API fetch 函數 (瀏覽器端使用)
+ * 自動添加平台識別和認證 headers
+ */
+export async function apiFetch<T = Record<string, unknown>>(
+  url: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const response = await fetch(url, createApiRequest(options))
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * JWT Token 過期時間配置資訊 (瀏覽器端使用)
+ * 根據平台返回不同的配置資訊
+ */
+export function getTokenConfig(platform?: ClientPlatform) {
+  const currentPlatform = platform || detectCurrentPlatform()
+
+  if (currentPlatform === 'mobile') {
+    return {
+      accessTokenDuration: 60, // 1 小時 (分鐘)
+      refreshTokenDuration: 30 * 24 * 60, // 30 天 (分鐘)
+      platform: 'mobile' as const,
+      description: '移動端 - 較長的 token 有效期，適合頻繁使用',
+    }
+  }
+
+  return {
+    accessTokenDuration: 15, // 15 分鐘
+    refreshTokenDuration: 7 * 24 * 60, // 7 天 (分鐘)
+    platform: 'web' as const,
+    description: 'Web 端 - 較短的 token 有效期，安全性優先',
+  }
 }
