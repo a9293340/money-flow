@@ -30,7 +30,7 @@ export async function initializeDatabase() {
 
     // 建立預設分類
     const categoryModule = await import('./category')
-    const Category = categoryModule.Category as typeof categoryModule.Category
+    const Category = categoryModule.Category as any
 
     // 嘗試執行預設分類建立
     try {
@@ -39,15 +39,7 @@ export async function initializeDatabase() {
         console.log('✅ 預設分類建立成功')
       }
       else {
-        console.log('🔍 嘗試從 schema statics 取得方法')
-        const categorySchema = Category.schema
-        if (categorySchema && categorySchema.statics.createDefaultCategories) {
-          await categorySchema.statics.createDefaultCategories.call(Category)
-          console.log('✅ 預設分類建立成功 (透過 schema statics)')
-        }
-        else {
-          console.log('⚠️  無法找到 createDefaultCategories 方法，跳過預設分類建立')
-        }
+        console.log('⚠️  無法找到 createDefaultCategories 方法，跳過預設分類建立')
       }
     }
     catch (error: unknown) {

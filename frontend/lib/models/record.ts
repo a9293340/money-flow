@@ -260,7 +260,7 @@ recordSchema.pre('save', async function (next) {
       next()
     }
     catch (error: unknown) {
-      next(error)
+      next(error instanceof Error ? error : new Error(String(error)))
     }
   }
   else {
@@ -284,9 +284,10 @@ recordSchema.statics.getUserRecords = function (
 
   // 日期範圍篩選
   if (options.startDate || options.endDate) {
-    query.date = {}
-    if (options.startDate) query.date.$gte = options.startDate
-    if (options.endDate) query.date.$lte = options.endDate
+    const dateQuery: any = {}
+    if (options.startDate) dateQuery.$gte = options.startDate
+    if (options.endDate) dateQuery.$lte = options.endDate
+    query.date = dateQuery
   }
 
   // 類型篩選
@@ -319,9 +320,10 @@ recordSchema.statics.getUserStats = function (
   const matchStage: Record<string, unknown> = { userId: new mongoose.Types.ObjectId(userId) }
 
   if (startDate || endDate) {
-    matchStage.date = {}
-    if (startDate) matchStage.date.$gte = startDate
-    if (endDate) matchStage.date.$lte = endDate
+    const dateQuery: any = {}
+    if (startDate) dateQuery.$gte = startDate
+    if (endDate) dateQuery.$lte = endDate
+    matchStage.date = dateQuery
   }
 
   return this.aggregate([
@@ -364,9 +366,10 @@ recordSchema.statics.getCategoryStats = function (
   }
 
   if (startDate || endDate) {
-    matchStage.date = {}
-    if (startDate) matchStage.date.$gte = startDate
-    if (endDate) matchStage.date.$lte = endDate
+    const dateQuery: any = {}
+    if (startDate) dateQuery.$gte = startDate
+    if (endDate) dateQuery.$lte = endDate
+    matchStage.date = dateQuery
   }
 
   return this.aggregate([

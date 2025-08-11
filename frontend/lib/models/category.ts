@@ -9,6 +9,15 @@ import mongoose, { Schema } from 'mongoose'
 // 分類類型
 export type CategoryType = 'income' | 'expense'
 
+// 靜態方法介面
+export interface ICategoryMethods {}
+
+export interface ICategoryStatics {
+  createDefaultCategories(): Promise<void>
+  getDefaultCategories(type?: CategoryType): Promise<ICategory[]>
+  getUserCategories(userId: string, type?: CategoryType): Promise<ICategory[]>
+}
+
 // 分類文檔介面
 export interface ICategory extends Document {
   _id: string
@@ -195,4 +204,4 @@ categorySchema.methods.canDelete = function (): boolean {
 }
 
 // 建立並匯出模型
-export const Category: Model<ICategory> = mongoose.models.Category || mongoose.model<ICategory>('Category', categorySchema)
+export const Category = mongoose.models.Category || mongoose.model<ICategory>('Category', categorySchema)
