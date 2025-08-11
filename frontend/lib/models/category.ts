@@ -3,14 +3,16 @@
  * 管理收支分類，包含預設分類和使用者自訂分類
  */
 
-import type { Document, Model } from 'mongoose'
+import type { Document } from 'mongoose'
 import mongoose, { Schema } from 'mongoose'
 
 // 分類類型
 export type CategoryType = 'income' | 'expense'
 
 // 靜態方法介面
-export interface ICategoryMethods {}
+export interface ICategoryMethods {
+  canDelete(): boolean
+}
 
 export interface ICategoryStatics {
   createDefaultCategories(): Promise<void>

@@ -189,7 +189,10 @@
           <!-- 移動端: 水平滑動布局 -->
           <div class="sm:hidden">
             <div class="overflow-x-auto pb-4">
-              <div class="flex gap-4 px-4" style="width: max-content;">
+              <div
+                class="flex gap-4 px-4"
+                style="width: max-content;"
+              >
                 <!-- Total Balance -->
                 <div class="card p-6 text-center group hover:shadow-elevated transition-all duration-300 animate-slide-up flex-shrink-0 w-72">
                   <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300">
@@ -270,9 +273,9 @@
             <!-- 滑動指示器 -->
             <div class="flex justify-center mt-4">
               <div class="flex items-center space-x-2">
-                <div class="w-6 h-1 bg-primary-300 rounded-full"></div>
-                <div class="w-2 h-1 bg-gray-300 rounded-full"></div>
-                <div class="w-2 h-1 bg-gray-300 rounded-full"></div>
+                <div class="w-6 h-1 bg-primary-300 rounded-full" />
+                <div class="w-2 h-1 bg-gray-300 rounded-full" />
+                <div class="w-2 h-1 bg-gray-300 rounded-full" />
               </div>
             </div>
           </div>

@@ -281,7 +281,10 @@
         <!-- 移動端: 水平滑動布局 -->
         <div class="md:hidden">
           <div class="overflow-x-auto pb-4">
-            <div class="flex gap-6 px-4" style="width: max-content;">
+            <div
+              class="flex gap-6 px-4"
+              style="width: max-content;"
+            >
               <!-- Feature 1: 跨平台同步 -->
               <div class="card p-6 text-center group hover:shadow-elevated transition-all duration-300 animate-slide-up flex-shrink-0 w-80">
                 <div class="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-300">
@@ -452,9 +455,9 @@
           <!-- 滑動指示器 -->
           <div class="flex justify-center mt-6">
             <div class="flex items-center space-x-2">
-              <div class="w-8 h-1 bg-primary-300 rounded-full"></div>
-              <div class="w-2 h-1 bg-gray-300 rounded-full"></div>
-              <div class="w-2 h-1 bg-gray-300 rounded-full"></div>
+              <div class="w-8 h-1 bg-primary-300 rounded-full" />
+              <div class="w-2 h-1 bg-gray-300 rounded-full" />
+              <div class="w-2 h-1 bg-gray-300 rounded-full" />
             </div>
           </div>
         </div>
