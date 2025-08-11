@@ -24,9 +24,12 @@ export async function connectMongoDB(): Promise<void> {
       return
     }
 
-    // 檢查連接字串
-    const mongoUri = useRuntimeConfig().mongodbUri
+    // 檢查連接字串 - 直接從環境變數讀取以確保在生產環境中正常工作
+    const mongoUri = process.env.MONGODB_URI || useRuntimeConfig().mongodbUri
     if (!mongoUri) {
+      console.error('❌ MongoDB 連接字串檢查失敗')
+      console.error('process.env.MONGODB_URI:', process.env.MONGODB_URI ? '存在' : '不存在')
+      console.error('useRuntimeConfig().mongodbUri:', useRuntimeConfig().mongodbUri ? '存在' : '不存在')
       throw new Error('❌ MONGODB_URI 環境變數未設定')
     }
 

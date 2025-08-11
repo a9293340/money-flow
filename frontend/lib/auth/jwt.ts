@@ -98,8 +98,12 @@ export function generateAccessToken(
   platform: ClientPlatform = 'web',
 ): string {
   const config = useRuntimeConfig()
+  const jwtSecret = process.env.JWT_SECRET || config.jwtSecret
 
-  if (!config.jwtSecret) {
+  if (!jwtSecret) {
+    console.error('❌ JWT Secret 檢查失敗')
+    console.error('process.env.JWT_SECRET:', process.env.JWT_SECRET ? '存在' : '不存在')
+    console.error('config.jwtSecret:', config.jwtSecret ? '存在' : '不存在')
     throw new Error('JWT_SECRET 未設定')
   }
 
@@ -110,7 +114,7 @@ export function generateAccessToken(
     audience: 'money-flow-users',
   }
 
-  return jwt.sign(payload, config.jwtSecret as string, options)
+  return jwt.sign(payload, jwtSecret as string, options)
 }
 
 /**
@@ -121,8 +125,12 @@ export function generateRefreshToken(
   platform: ClientPlatform = 'web',
 ): string {
   const config = useRuntimeConfig()
+  const jwtSecret = process.env.JWT_SECRET || config.jwtSecret
 
-  if (!config.jwtSecret) {
+  if (!jwtSecret) {
+    console.error('❌ JWT Secret 檢查失敗')
+    console.error('process.env.JWT_SECRET:', process.env.JWT_SECRET ? '存在' : '不存在')
+    console.error('config.jwtSecret:', config.jwtSecret ? '存在' : '不存在')
     throw new Error('JWT_SECRET 未設定')
   }
 
@@ -133,7 +141,7 @@ export function generateRefreshToken(
     audience: 'money-flow-refresh',
   }
 
-  return jwt.sign(payload, config.jwtSecret as string, options)
+  return jwt.sign(payload, jwtSecret as string, options)
 }
 
 /**
@@ -141,8 +149,12 @@ export function generateRefreshToken(
  */
 export function verifyAccessToken(token: string): JWTPayload {
   const config = useRuntimeConfig()
+  const jwtSecret = process.env.JWT_SECRET || config.jwtSecret
 
-  if (!config.jwtSecret) {
+  if (!jwtSecret) {
+    console.error('❌ JWT Secret 檢查失敗')
+    console.error('process.env.JWT_SECRET:', process.env.JWT_SECRET ? '存在' : '不存在')
+    console.error('config.jwtSecret:', config.jwtSecret ? '存在' : '不存在')
     throw new Error('JWT_SECRET 未設定')
   }
 
@@ -152,7 +164,7 @@ export function verifyAccessToken(token: string): JWTPayload {
       audience: 'money-flow-users',
     }
 
-    const decoded = jwt.verify(token, config.jwtSecret as string, options) as JWTPayload
+    const decoded = jwt.verify(token, jwtSecret as string, options) as JWTPayload
 
     return decoded
   }
@@ -174,8 +186,12 @@ export function verifyAccessToken(token: string): JWTPayload {
  */
 export function verifyRefreshToken(token: string): RefreshTokenPayload {
   const config = useRuntimeConfig()
+  const jwtSecret = process.env.JWT_SECRET || config.jwtSecret
 
-  if (!config.jwtSecret) {
+  if (!jwtSecret) {
+    console.error('❌ JWT Secret 檢查失敗')
+    console.error('process.env.JWT_SECRET:', process.env.JWT_SECRET ? '存在' : '不存在')
+    console.error('config.jwtSecret:', config.jwtSecret ? '存在' : '不存在')
     throw new Error('JWT_SECRET 未設定')
   }
 
@@ -185,7 +201,7 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload {
       audience: 'money-flow-refresh',
     }
 
-    const decoded = jwt.verify(token, config.jwtSecret as string, options) as RefreshTokenPayload
+    const decoded = jwt.verify(token, jwtSecret as string, options) as RefreshTokenPayload
 
     return decoded
   }
