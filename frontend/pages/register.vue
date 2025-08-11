@@ -643,13 +643,15 @@ async function handleRegister() {
           setTimeout(() => {
             navigateTo('/dashboard')
           }, 1500)
-        } else {
+        }
+        else {
           // 登入失敗，跳轉到登入頁面
           setTimeout(() => {
             navigateTo('/login')
           }, 2000)
         }
-      } catch (loginError) {
+      }
+      catch (loginError) {
         console.error('Auto login error:', loginError)
         // 自動登入失敗，跳轉到登入頁面
         setTimeout(() => {

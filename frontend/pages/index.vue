@@ -639,15 +639,29 @@ definePageMeta({
 // 檢查用戶是否已登入，如果是則導向 dashboard
 onMounted(async () => {
   try {
-    const response = await $fetch('/api/auth/me', {
+    const response = await $fetch<{
+      success: boolean
+      message: string
+      data?: {
+        user: {
+          id: string
+          email: string
+          name: string
+        }
+      }
+      errors?: string[]
+      requireLogin?: boolean
+      error?: string
+    }>('/api/auth/me', {
       credentials: 'include',
     })
-    
-    if (response.success && response.user) {
+
+    if (response.success && response.data?.user) {
       // 用戶已登入，導向 dashboard
       await navigateTo('/dashboard', { replace: true })
     }
-  } catch (error) {
+  }
+  catch {
     // 用戶未登入或 token 無效，繼續顯示首頁
     console.log('用戶未登入或 token 無效')
   }
