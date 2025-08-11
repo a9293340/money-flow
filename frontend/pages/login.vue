@@ -99,7 +99,7 @@
                 required
                 autocomplete="email"
                 :class="[
-                  'input-base pl-10',
+                  'input-base input-with-icon-left',
                   errors.email ? 'input-error' : '',
                 ]"
                 placeholder="請輸入您的電子郵件"
@@ -146,7 +146,7 @@
                 required
                 autocomplete="current-password"
                 :class="[
-                  'input-base pl-10 pr-10',
+                  'input-base input-with-icons',
                   errors.password ? 'input-error' : '',
                 ]"
                 placeholder="請輸入您的密碼"

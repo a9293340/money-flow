@@ -99,7 +99,7 @@
                 required
                 autocomplete="name"
                 :class="[
-                  'input-base pl-10',
+                  'input-base input-with-icon-left',
                   errors.name ? 'input-error' : '',
                 ]"
                 placeholder="請輸入您的姓名"
@@ -146,7 +146,7 @@
                 required
                 autocomplete="email"
                 :class="[
-                  'input-base pl-10',
+                  'input-base input-with-icon-left',
                   errors.email ? 'input-error' : '',
                 ]"
                 placeholder="請輸入您的電子郵件"
@@ -193,7 +193,7 @@
                 required
                 autocomplete="new-password"
                 :class="[
-                  'input-base pl-10 pr-10',
+                  'input-base input-with-icons',
                   errors.password ? 'input-error' : '',
                 ]"
                 placeholder="至少 8 個字元"
@@ -281,7 +281,7 @@
                 required
                 autocomplete="new-password"
                 :class="[
-                  'input-base pl-10 pr-10',
+                  'input-base input-with-icons',
                   errors.confirmPassword ? 'input-error' : '',
                 ]"
                 placeholder="請再次輸入密碼"
@@ -616,12 +616,46 @@ async function handleRegister() {
     })
 
     if (response.success) {
-      success.value = response.message || '註冊成功！正在跳轉至登入頁面...'
+      success.value = response.message || '註冊成功！正在自動登入...'
 
-      // 延遲跳轉到登入頁面
-      setTimeout(() => {
-        navigateTo('/login')
-      }, 2000)
+      // 註冊成功後自動登入
+      try {
+        const loginResponse = await apiFetch<{
+          success: boolean
+          message: string
+          data?: {
+            user: {
+              id: string
+              email: string
+              name: string
+            }
+          }
+        }>('/api/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: form.email,
+            password: form.password,
+          }),
+        })
+
+        if (loginResponse.success) {
+          // 登入成功，直接導向 dashboard
+          setTimeout(() => {
+            navigateTo('/dashboard')
+          }, 1500)
+        } else {
+          // 登入失敗，跳轉到登入頁面
+          setTimeout(() => {
+            navigateTo('/login')
+          }, 2000)
+        }
+      } catch (loginError) {
+        console.error('Auto login error:', loginError)
+        // 自動登入失敗，跳轉到登入頁面
+        setTimeout(() => {
+          navigateTo('/login')
+        }, 2000)
+      }
     }
     else {
       error.value = response.message || '註冊失敗'

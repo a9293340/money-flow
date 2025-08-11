@@ -149,6 +149,15 @@ module.exports = {
         '.input-base': {
           '@apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-200': {},
         },
+        '.input-with-icon-left': {
+          '@apply pl-12': {}, // 為左側圖標留出足夠空間
+        },
+        '.input-with-icon-right': {
+          '@apply pr-12': {}, // 為右側圖標留出足夠空間
+        },
+        '.input-with-icons': {
+          '@apply pl-12 pr-12': {}, // 左右都有圖標
+        },
         '.input-error': {
           '@apply border-danger-300 text-danger-900 placeholder-danger-300 focus:ring-danger-500': {},
         },
