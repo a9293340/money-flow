@@ -44,7 +44,7 @@ const getTokenConfig = (platform: ClientPlatform) => {
       },
     }
   }
-  
+
   // Web 預設設定
   return {
     access: {
@@ -72,21 +72,21 @@ export function detectClientPlatform(event: H3Event): ClientPlatform {
   if (clientPlatform === 'mobile' || clientPlatform === 'web') {
     return clientPlatform as ClientPlatform
   }
-  
+
   // 2. 檢查 User-Agent 中的 Tauri 特徵
   const userAgent = getHeader(event, 'user-agent') || ''
-  
+
   // Tauri 應用的 User-Agent 特徵檢測
   const tauriFeatures = [
-    'tauri',           // Tauri 標識
-    'money-flow',      // 我們的應用名稱
-    'wry',             // Tauri 使用的 WebView 引擎
+    'tauri', // Tauri 標識
+    'money-flow', // 我們的應用名稱
+    'wry', // Tauri 使用的 WebView 引擎
   ]
-  
-  const isMobile = tauriFeatures.some(feature => 
-    userAgent.toLowerCase().includes(feature)
+
+  const isMobile = tauriFeatures.some(feature =>
+    userAgent.toLowerCase().includes(feature),
   )
-  
+
   return isMobile ? 'mobile' : 'web'
 }
 
@@ -94,8 +94,8 @@ export function detectClientPlatform(event: H3Event): ClientPlatform {
  * 產生 Access Token (支援動態平台設定)
  */
 export function generateAccessToken(
-  payload: Omit<JWTPayload, 'iat' | 'exp'>, 
-  platform: ClientPlatform = 'web'
+  payload: Omit<JWTPayload, 'iat' | 'exp'>,
+  platform: ClientPlatform = 'web',
 ): string {
   const config = useRuntimeConfig()
 
@@ -117,8 +117,8 @@ export function generateAccessToken(
  * 產生 Refresh Token (支援動態平台設定)
  */
 export function generateRefreshToken(
-  payload: Omit<RefreshTokenPayload, 'iat' | 'exp'>, 
-  platform: ClientPlatform = 'web'
+  payload: Omit<RefreshTokenPayload, 'iat' | 'exp'>,
+  platform: ClientPlatform = 'web',
 ): string {
   const config = useRuntimeConfig()
 
@@ -235,13 +235,13 @@ function getCookieOptions(isRefreshToken = false, platform: ClientPlatform = 'we
  * 設定認證 Cookies (支援動態平台設定)
  */
 export function setAuthCookies(
-  event: H3Event, 
-  accessToken: string, 
-  refreshToken: string, 
-  platform: ClientPlatform = 'web'
+  event: H3Event,
+  accessToken: string,
+  refreshToken: string,
+  platform: ClientPlatform = 'web',
 ) {
   const tokenConfig = getTokenConfig(platform)
-  
+
   // 設定 Access Token Cookie
   setCookie(event, tokenConfig.access.cookieName, accessToken, getCookieOptions(false, platform))
 
@@ -254,7 +254,7 @@ export function setAuthCookies(
  */
 export function clearAuthCookies(event: H3Event, platform: ClientPlatform = 'web') {
   const tokenConfig = getTokenConfig(platform)
-  
+
   // 清除 Access Token Cookie
   deleteCookie(event, tokenConfig.access.cookieName, {
     path: '/',

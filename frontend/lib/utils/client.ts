@@ -123,7 +123,7 @@ export function isPrivateIP(ip: string): boolean {
  */
 export function detectCurrentPlatform(): ClientPlatform {
   // 檢查是否在 Tauri 環境中運行
-  if (typeof window !== 'undefined' && (window as Record<string, unknown>).__TAURI__) {
+  if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__TAURI__) {
     return 'mobile'
   }
 

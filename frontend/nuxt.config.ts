@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/devtools',
     '@nuxt/eslint',
+    '@nuxtjs/tailwindcss',
   ],
 
   // 服務端渲染配置

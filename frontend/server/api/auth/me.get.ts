@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   try {
     // 連接資料庫
     await connectMongoDB()
-    
+
     // 從請求中取得 Access Token
     const accessToken = getAccessTokenFromEvent(event)
     if (!accessToken) {
@@ -17,10 +17,10 @@ export default defineEventHandler(async (event) => {
         requireLogin: true,
       }
     }
-    
+
     // 驗證 Access Token
     const payload = verifyAccessToken(accessToken)
-    
+
     // 查找使用者
     const user = await User.findById(payload.userId)
     if (!user) {
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
         requireLogin: true,
       }
     }
-    
+
     // 檢查帳戶是否被鎖定
     if (user.isLocked && user.isLocked()) {
       return {
@@ -41,7 +41,7 @@ export default defineEventHandler(async (event) => {
         requireLogin: true,
       }
     }
-    
+
     return {
       success: true,
       message: '使用者資訊取得成功',
@@ -58,11 +58,10 @@ export default defineEventHandler(async (event) => {
         },
       },
     }
-    
   }
   catch (error: unknown) {
     console.error('取得使用者資訊錯誤:', error)
-    
+
     // Token 過期或無效
     if (error instanceof Error && (error.message.includes('過期') || error.message.includes('無效'))) {
       return {
@@ -72,7 +71,7 @@ export default defineEventHandler(async (event) => {
         requireLogin: true,
       }
     }
-    
+
     return {
       success: false,
       message: '取得使用者資訊失敗',
