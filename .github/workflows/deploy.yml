@@ -3,69 +3,56 @@ name: 🚀 Deploy to Production
 on:
   push:
     branches: [main]
-    # 排除純文檔和非核心檔案變更
-    paths-ignore:
-      - 'docs/**'
-      - '*.md'
-      - 'LICENSE'
-      - '.gitignore'
-      - '.env.example'
-      - '**/*.txt'
-  
+    # 只在這些路徑有變更時觸發
+    paths:
+      - 'frontend/**'
+      - 'deploy/**'
+      - '.github/workflows/**'
+
   pull_request:
     branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '*.md'
-      - 'LICENSE'
-      - '.gitignore'
-      - '.env.example'
-      - '**/*.txt'
-  
+    paths:
+      - 'frontend/**'
+      - 'deploy/**'
+      - '.github/workflows/**'
+
   workflow_dispatch: # 允許手動觸發
     inputs:
       force_deploy:
         description: '強制執行完整部署 (忽略路徑檢查)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 env:
   # Docker 相關
   DOCKER_IMAGE: ${{ vars.DOCKER_IMAGE }}
-  
+
   # Google Cloud 相關
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   CLOUD_RUN_REGION: ${{ secrets.CLOUD_RUN_REGION }}
   CLOUD_RUN_SERVICE: ${{ secrets.CLOUD_RUN_SERVICE }}
-  
+
   # Node.js 版本
   NODE_VERSION: ${{ vars.NODE_VERSION }}
-  
+
   # 應用程式 URL（支援自定義域名）
   SERVICE_URL: ${{ vars.SERVICE_URL }}
 
 jobs:
-  # 程式碼品質檢查 - 所有程式碼變更都需要檢查
+  # 程式碼品質檢查 - 只要 workflow 觸發就執行
   quality-check:
     name: 📋 Code Quality Check
     runs-on: ubuntu-latest
-    # 排除純 CI/CD 配置變更 (只修改 workflow 不修改程式碼時)
+    # 只排除 [skip ci] 標記
     if: |
       github.event_name == 'workflow_dispatch' || 
       github.event_name == 'pull_request' ||
-      (
-        !contains(github.event.head_commit.message, '[skip ci]') &&
-        (
-          contains(join(github.event.commits.*.modified, ' '), 'frontend/') ||
-          contains(join(github.event.commits.*.added, ' '), 'frontend/') ||
-          contains(join(github.event.commits.*.modified, ' '), 'deploy/')
-        )
-      )
+      !contains(github.event.head_commit.message, '[skip ci]')
     defaults:
       run:
         working-directory: ./frontend
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -89,42 +76,26 @@ jobs:
       - name: 🧪 Run tests
         run: yarn test
 
-  # Docker 建置和推送
+  # Docker 建置和推送 - 排除 src-tauri 和 tests 目錄
   build-and-push:
     name: 🐳 Build & Push Docker Image
     runs-on: ubuntu-latest
     needs: quality-check
-    # 只有當 Web 相關檔案或 deploy/ 有變更，或手動強制部署時才執行
-    # 排除純 Tauri 配置變更 (frontend/src-tauri/)
+    # 只排除純 src-tauri 或純 tests 變更
     if: |
       (needs.quality-check.result == 'success') && (
         github.event.inputs.force_deploy == 'true' ||
         github.event_name == 'pull_request' ||
         (
           github.event_name == 'push' &&
-          !contains(github.event.head_commit.message, '[skip deploy]') &&
-          (
-            contains(join(github.event.commits.*.modified, ' '), 'frontend/app/') ||
-            contains(join(github.event.commits.*.modified, ' '), 'frontend/server/') ||
-            contains(join(github.event.commits.*.modified, ' '), 'frontend/public/') ||
-            contains(join(github.event.commits.*.modified, ' '), 'frontend/docker/') ||
-            contains(join(github.event.commits.*.modified, ' '), 'frontend/nuxt.config') ||
-            contains(join(github.event.commits.*.modified, ' '), 'frontend/package.json') ||
-            contains(join(github.event.commits.*.modified, ' '), 'frontend/yarn.lock') ||
-            contains(join(github.event.commits.*.modified, ' '), 'frontend/tsconfig.json') ||
-            contains(join(github.event.commits.*.modified, ' '), 'frontend/eslint.config') ||
-            contains(join(github.event.commits.*.added, ' '), 'frontend/app/') ||
-            contains(join(github.event.commits.*.added, ' '), 'frontend/server/') ||
-            contains(join(github.event.commits.*.added, ' '), 'frontend/public/') ||
-            contains(join(github.event.commits.*.modified, ' '), 'deploy/')
-          )
+          !contains(github.event.head_commit.message, '[skip deploy]')
         )
       )
     outputs:
       deploy-tag: ${{ steps.tag.outputs.deploy_tag }}
       image-tags: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -145,12 +116,12 @@ jobs:
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           TIMESTAMP=$(date +"%Y%m%d-%H%M")
           COMMIT_SHORT="${GITHUB_SHA:0:7}"
-          
+
           DEPLOY_TAG="${BRANCH_NAME}-${TIMESTAMP}-${COMMIT_SHORT}"
-          
+
           echo "deploy_tag=${DEPLOY_TAG}" >> $GITHUB_OUTPUT
           echo "🏷️ Generated deployment tag: ${DEPLOY_TAG}"
-          
+
       - name: 📋 Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -189,7 +160,7 @@ jobs:
     if: |
       (needs.build-and-push.result == 'success') && 
       (github.event_name == 'push' || github.event.inputs.force_deploy == 'true')
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -208,21 +179,21 @@ jobs:
         run: |
           DEPLOY_TAG="${{ needs.build-and-push.outputs.deploy-tag }}"
           FULL_IMAGE="${{ env.DOCKER_IMAGE }}:${DEPLOY_TAG}"
-          
+
           echo "📝 Deploying with versioned image: ${FULL_IMAGE}"
           echo "🏷️ Deployment tag: ${DEPLOY_TAG}"
-          
+
           # 更新 Cloud Run YAML 中的鏡像標籤
           sed -i "s|image: .*|image: ${FULL_IMAGE}|" deploy/cloud-run-service.yaml
-          
+
           echo "📝 Updated Cloud Run service configuration:"
           grep -A2 -B2 "image:" deploy/cloud-run-service.yaml
-          
+
           # 部署到 Cloud Run
           gcloud run services replace deploy/cloud-run-service.yaml \
             --region=${{ env.CLOUD_RUN_REGION }} \
             --project=${{ env.GCP_PROJECT_ID }}
-          
+
           echo "✅ Deployment completed successfully"
           echo "🏷️ Deployed version: ${DEPLOY_TAG}"
 
@@ -239,7 +210,7 @@ jobs:
         run: |
           SERVICE_URL="${{ env.SERVICE_URL }}"
           echo "🌍 Using configured service URL: $SERVICE_URL"
-          
+
           # 驗證 URL 不為空
           if [ -z "$SERVICE_URL" ]; then
             echo "❌ SERVICE_URL variable is not set!"
@@ -247,14 +218,14 @@ jobs:
             echo "   Example: https://your-service.asia-east1.run.app"
             exit 1
           fi
-          
+
           # 驗證 URL 格式
           if [[ $SERVICE_URL =~ ^https://.*$ ]]; then
             echo "✅ Valid HTTPS URL format"
           else
             echo "⚠️ URL should start with https://"
           fi
-          
+
           # 注意: SERVICE_URL 現在由環境變數管理
 
   # 部署後驗證
@@ -262,20 +233,20 @@ jobs:
     name: ✅ Verify Deployment
     runs-on: ubuntu-latest
     needs: deploy
-    
+
     steps:
       - name: 🏥 Basic Health Check
         run: |
           echo "🔍 Testing basic application health..."
           SERVICE_URL="${{ env.SERVICE_URL }}"
-          
+
           echo "📍 Service URL: $SERVICE_URL"
           echo "🎯 Testing URL: $SERVICE_URL/api/health"
-          
+
           # 等待應用程式启動
           echo "⏳ Waiting for application to be ready..."
           sleep 45
-          
+
           # 多次嘗試健康檢查
           for i in {1..3}; do
             echo "🔍 Health check attempt $i/3..."
@@ -292,17 +263,17 @@ jobs:
               fi
             fi
           done
-          
+
           echo "❌ Basic health check failed after 3 attempts"
           echo "🔧 Final attempt with verbose output:"
           curl -v "$SERVICE_URL/api/health" || echo "Connection failed"
           exit 1
 
-      - name: ⚙️ Health Check - Environment  
+      - name: ⚙️ Health Check - Environment
         run: |
           echo "🔍 Testing environment configuration..."
           SERVICE_URL="${{ env.SERVICE_URL }}"
-          
+
           if curl -f -s "$SERVICE_URL/api/health/env" -o /dev/null; then
             echo "✅ Environment health check passed"
           else
@@ -315,8 +286,8 @@ jobs:
           echo "🎊 Deployment completed successfully!"
           echo "🌍 Application URL: ${{ env.SERVICE_URL }}"
           echo "🏥 Health Check: ${{ env.SERVICE_URL }}/api/health"
-          echo "🏷️ Deployed Version: ${{ needs.build-and-push.outputs.deploy-tag }}"
-          echo "🐳 Docker Image: ${{ env.DOCKER_IMAGE }}:${{ needs.build-and-push.outputs.deploy-tag }}"
+          echo "🏷️ Deployed Version: ${{ needs.deploy.outputs.deploy-tag || 'N/A' }}"
+          echo "🐳 Docker Image: ${{ env.DOCKER_IMAGE }}:${{ needs.deploy.outputs.deploy-tag || 'latest' }}"
           echo "📅 Deployed at: $(date)"
           echo ""
           echo "🚀 Personal Finance Manager is now live!"
@@ -328,7 +299,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [quality-check, build-and-push, deploy, verify-deployment]
     if: always() && needs.quality-check.result != 'skipped'
-    
+
     steps:
       - name: 📊 Pipeline Summary
         run: |
@@ -340,20 +311,20 @@ jobs:
             echo "⚡ 手動強制部署: 已啟用"
           fi
           echo ""
-          
+
           # 分析執行的階段
           QUALITY_STATUS="${{ needs.quality-check.result }}"
           BUILD_STATUS="${{ needs.build-and-push.result }}"
           DEPLOY_STATUS="${{ needs.deploy.result }}"
           VERIFY_STATUS="${{ needs.verify-deployment.result }}"
-          
+
           echo "📊 執行階段狀態:"
           echo "  📋 Code Quality: $QUALITY_STATUS"
           echo "  🐳 Build & Push: $BUILD_STATUS"
           echo "  🚀 Deploy: $DEPLOY_STATUS"
           echo "  ✅ Verify: $VERIFY_STATUS"
           echo ""
-          
+
           echo "💡 智能觸發提示:"
           echo "  - 只修改文檔 (.md, docs/) → 完全跳過"
           echo "  - 修改程式碼但非 Web 相關 → 只執行品質檢查"  
@@ -369,8 +340,10 @@ jobs:
           echo "🎊 完整部署流程成功！"
           echo "✅ Personal Finance Manager 已成功部署到生產環境"
           echo "🌍 服務 URL: ${{ env.SERVICE_URL }}"
-          echo "🏷️ 部署版本: ${{ needs.build-and-push.outputs.deploy-tag }}"
-          echo "🐳 Docker Image: ${{ env.DOCKER_IMAGE }}:${{ needs.build-and-push.outputs.deploy-tag }}"
+          if [ -n "${{ needs.build-and-push.outputs.deploy-tag }}" ]; then
+            echo "🏷️ 部署版本: ${{ needs.build-and-push.outputs.deploy-tag }}"
+            echo "🐳 Docker Image: ${{ env.DOCKER_IMAGE }}:${{ needs.build-and-push.outputs.deploy-tag }}"
+          fi
           echo "🎯 完整流程: 品質檢查 → Docker建置 → Cloud Run部署 → 健康驗證 ✅"
 
       - name: ⚡ Quality Check Only Success
