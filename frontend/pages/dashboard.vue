@@ -595,6 +595,7 @@
 
 <script setup lang="ts">
 import { apiFetch, getTokenConfig } from '~/lib/utils/client'
+import { authenticatedFetch, checkAuthStatus, handleRequireLogin } from '~/lib/utils/auth'
 
 // 頁面設定
 definePageMeta({
@@ -627,29 +628,26 @@ function formatWelcomeTime() {
 
 // 載入使用者資訊
 async function loadUserInfo() {
+  userError.value = '' // 清除之前的錯誤
+  
   try {
-    const response = await apiFetch<{
-      success: boolean
-      message?: string
-      data: {
-        user: any
-      }
-    }>('/api/auth/me')
-
-    if (response.success) {
-      user.value = response.data.user
+    const authResult = await checkAuthStatus()
+    
+    if (authResult?.user) {
+      user.value = authResult.user
+    } else {
+      userError.value = '無法取得使用者資訊'
+      handleRequireLogin()
     }
-    else {
-      userError.value = response.message || '無法取得使用者資訊'
-    }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Load user info error:', error)
-    userError.value = '載入使用者資訊失敗，請重新登入'
-    // 跳轉到登入頁面
-    setTimeout(() => {
-      navigateTo('/login')
-    }, 2000)
+    
+    if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
+      userError.value = 'Token 已過期，請重新登入'
+      handleRequireLogin()
+    } else {
+      userError.value = '載入使用者資訊失敗'
+    }
   }
 }
 
@@ -670,15 +668,19 @@ async function handleLogout() {
   }
 }
 
-// 測試 /api/auth/me
+// 測試 /api/auth/me (使用自動刷新功能)
 async function testAuthMe() {
   testing.value = true
   try {
-    const response = await apiFetch<Record<string, unknown>>('/api/auth/me')
+    const response = await authenticatedFetch<Record<string, unknown>>('/api/auth/me')
     testResult.value = JSON.stringify(response, null, 2)
   }
   catch (error) {
-    testResult.value = `錯誤: ${error}`
+    if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
+      testResult.value = '需要重新登入'
+    } else {
+      testResult.value = `錯誤: ${error}`
+    }
   }
   finally {
     testing.value = false

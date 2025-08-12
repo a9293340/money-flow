@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
     // 從請求中取得 Access Token
     const accessToken = getAccessTokenFromEvent(event)
     if (!accessToken) {
+      setResponseStatus(event, 401)
       return {
         success: false,
         message: '未提供認證 token',
@@ -24,6 +25,7 @@ export default defineEventHandler(async (event) => {
     // 查找使用者
     const user = await User.findById(payload.userId)
     if (!user) {
+      setResponseStatus(event, 401)
       return {
         success: false,
         message: '使用者不存在',
@@ -34,6 +36,7 @@ export default defineEventHandler(async (event) => {
 
     // 檢查帳戶是否被鎖定
     if (user.isLocked && user.isLocked()) {
+      setResponseStatus(event, 401)
       return {
         success: false,
         message: '帳戶已被鎖定',
@@ -64,6 +67,7 @@ export default defineEventHandler(async (event) => {
 
     // Token 過期或無效
     if (error instanceof Error && (error.message.includes('過期') || error.message.includes('無效'))) {
+      setResponseStatus(event, 401)
       return {
         success: false,
         message: 'Token 已過期，請重新登入',
