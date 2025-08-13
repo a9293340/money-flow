@@ -177,14 +177,14 @@ export function detectCurrentPlatform(): ClientPlatform {
  * 獲取 API 請求的預設 headers (瀏覽器端使用)
  * @returns 包含平台標識的 headers
  */
-export function getApiHeaders(): HeadersInit {
-  const platform = detectCurrentPlatform()
+// export function getApiHeaders(): HeadersInit {
+//   const platform = detectCurrentPlatform()
 
-  return {
-    'Content-Type': 'application/json',
-    'X-Client-Platform': platform,
-  }
-}
+//   return {
+//     'Content-Type': 'application/json',
+//     'X-Client-Platform': platform,
+//   }
+// }
 
 /**
  * 創建包含認證資訊的 fetch 選項 (瀏覽器端使用)
@@ -192,12 +192,12 @@ export function getApiHeaders(): HeadersInit {
  * @returns 完整的 fetch 選項
  */
 export function createApiRequest(options: RequestInit = {}): RequestInit {
-  const defaultHeaders = getApiHeaders()
+  // const defaultHeaders = getApiHeaders()
 
   return {
     ...options,
     headers: {
-      ...defaultHeaders,
+      // ...defaultHeaders,
       ...(options.headers || {}),
     },
     // 全面停用 credentials，確保與 CORS '*' 相容

@@ -462,9 +462,8 @@ async function handleLogin() {
   clearErrors()
 
   try {
-    // 取得 runtime config 來使用完整的 API URL
-    const { public: { apiUrl } } = useRuntimeConfig()
-    const loginUrl = `${apiUrl}/login`
+    // 使用相對路徑避免跨域問題
+    const loginUrl = '/api/login'
 
     const response = await apiFetch<{
       success: boolean
