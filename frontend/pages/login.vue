@@ -59,7 +59,6 @@
           <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2" />
           {{ platformInfo.platform }} 平台 • {{ platformInfo.accessTokenDuration }}分鐘有效期
         </div>
-        
       </div>
 
       <!-- Login Form Card -->
@@ -391,7 +390,6 @@
         </p>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -467,7 +465,7 @@ async function handleLogin() {
     // 取得 runtime config 來使用完整的 API URL
     const { public: { apiUrl } } = useRuntimeConfig()
     const loginUrl = `${apiUrl}/login`
-    
+
     const response = await apiFetch<{
       success: boolean
       message: string
@@ -517,11 +515,13 @@ async function handleLogin() {
         try {
           const errorData = JSON.parse(err.message.replace('JSON parsing failed: ', ''))
           error.value = `網路錯誤：狀態 ${errorData.status} ${errorData.statusText}\n回應內容：${errorData.responseText}\n內容類型：${errorData.contentType}`
-        } catch (parseErr) {
+        }
+        catch {
           error.value = `網路錯誤：${err.message}`
         }
       }
-    } else {
+    }
+    else {
       error.value = `網路錯誤：${JSON.stringify(err, null, 2)}`
     }
   }
