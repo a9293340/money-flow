@@ -180,6 +180,12 @@ export function detectCurrentPlatform(): ClientPlatform {
 export function getApiHeaders(): HeadersInit {
   const platform = detectCurrentPlatform()
 
+  if (platform === 'mobile') {
+    // Mobile: 使用最簡單的 headers，避免 preflight
+    return {}
+  }
+
+  // Web: 使用完整 headers
   return {
     'Content-Type': 'application/json',
     'X-Client-Platform': platform,
@@ -213,6 +219,30 @@ export function createApiRequest(options: RequestInit = {}): RequestInit {
 }
 
 /**
+ * 移動端專用登入請求 (避免 preflight)
+ */
+export async function mobileLoginFetch<T = Record<string, unknown>>(
+  url: string,
+  data: { email: string, password: string, rememberMe: boolean },
+): Promise<T> {
+  // 使用 FormData 避免 preflight
+  const formData = new FormData()
+  formData.append('email', data.email)
+  formData.append('password', data.password)
+  formData.append('rememberMe', data.rememberMe.toString())
+
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData,
+    // 不設定 Content-Type，讓瀏覽器自動設定為 multipart/form-data
+    // 不使用 credentials
+    // 不使用自定義 headers
+  })
+
+  return response.json()
+}
+
+/**
  * 封裝的 API fetch 函數 (瀏覽器端使用)
  * 自動添加平台識別和認證 headers
  */
@@ -220,6 +250,22 @@ export async function apiFetch<T = Record<string, unknown>>(
   url: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const platform = detectCurrentPlatform()
+
+  // 移動端特殊處理：如果是 POST 且有 body，嘗試用 FormData
+  if (platform === 'mobile' && options.method === 'POST' && options.body) {
+    try {
+      const bodyData = JSON.parse(options.body as string)
+      // 如果是登入請求，使用 FormData
+      if (bodyData.email && bodyData.password) {
+        return mobileLoginFetch(url, bodyData)
+      }
+    }
+    catch {
+      // 如果不是 JSON，繼續使用原邏輯
+    }
+  }
+
   const response = await fetch(url, createApiRequest(options))
 
   // 檢查 Content-Type 是否為 JSON

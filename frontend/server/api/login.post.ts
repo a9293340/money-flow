@@ -22,8 +22,33 @@ export default defineEventHandler(async (event) => {
     // 連接資料庫
     await connectMongoDB()
 
-    // 讀取請求資料
-    const body = await readBody(event)
+    // 讀取請求資料 (支援 JSON 和 FormData)
+    let body: any
+    const contentType = getHeader(event, 'content-type') || ''
+
+    if (contentType.includes('multipart/form-data')) {
+      // 處理 FormData (移動端)
+      const formData = await readMultipartFormData(event)
+      body = {}
+
+      formData?.forEach((field) => {
+        const key = field.name
+        const value = field.data?.toString('utf8')
+
+        if (key && value !== undefined) {
+          if (key === 'rememberMe') {
+            body[key] = value === 'true'
+          }
+          else {
+            body[key] = value
+          }
+        }
+      })
+    }
+    else {
+      // 處理 JSON (Web 端)
+      body = await readBody(event)
+    }
 
     // Zod 驗證
     const validationResult = loginSchema.safeParse(body)
