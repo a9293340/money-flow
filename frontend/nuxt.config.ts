@@ -28,18 +28,13 @@ function getAppUrl(): string {
  */
 function getApiUrl(): string {
   const isDev = process.env.NODE_ENV === 'development'
-  const isTauri = process.env.TAURI_PLATFORM
   const productionDomain = process.env.PRODUCTION_DOMAIN
 
-  if (isDev && !isTauri) {
+  if (isDev || !productionDomain) {
     return 'http://localhost:3000/api'
   }
 
-  if (productionDomain) {
-    return `https://${productionDomain}/api`
-  }
-
-  return 'http://localhost:3000/api'
+  return `https://${productionDomain}/api`
 }
 
 export default defineNuxtConfig({

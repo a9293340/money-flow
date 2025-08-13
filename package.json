@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "cd frontend && yarn dev",
     "build": "cd frontend && yarn build",
+    "preview": "cd frontend && yarn preview",
     "build:apk": "cd frontend && yarn build:apk",
     "build:apk:debug": "cd frontend && yarn build:apk:debug",
     "mobile:dev": "cd frontend && yarn mobile:dev",
