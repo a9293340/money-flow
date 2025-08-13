@@ -122,21 +122,54 @@ export function isPrivateIP(ip: string): boolean {
  * @returns 客戶端平台類型
  */
 export function detectCurrentPlatform(): ClientPlatform {
-  // 檢查是否在 Tauri 環境中運行
-  if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__TAURI__) {
-    return 'mobile'
+  // 調試資訊
+  if (typeof window !== 'undefined') {
+    console.log('Platform detection debug:', {
+      hasTauri: !!(window as unknown as Record<string, unknown>).__TAURI__,
+      hasInvoke: !!(window as unknown as Record<string, unknown>).__TAURI_INVOKE__,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+      windowKeys: Object.keys(window).filter(key => key.includes('TAURI') || key.includes('tauri')),
+    })
   }
 
-  // 檢查 User-Agent 中的 Tauri 特徵
-  if (typeof navigator !== 'undefined') {
-    const userAgent = navigator.userAgent.toLowerCase()
-    const tauriFeatures = ['tauri', 'money-flow', 'wry']
-
-    if (tauriFeatures.some(feature => userAgent.includes(feature))) {
+  // 1. 檢查 Tauri API 是否存在
+  if (typeof window !== 'undefined') {
+    const w = window as unknown as Record<string, unknown>
+    if (w.__TAURI__ || w.__TAURI_INVOKE__ || w.tauri) {
+      console.log('Detected mobile platform via Tauri API')
       return 'mobile'
     }
   }
 
+  // 2. 檢查 User-Agent 中的 Tauri 特徵
+  if (typeof navigator !== 'undefined') {
+    const userAgent = navigator.userAgent.toLowerCase()
+    const tauriFeatures = ['tauri', 'wry', 'webkit', 'android']
+    
+    // 對於 Android Tauri 應用，檢查特定模式
+    if (userAgent.includes('android') && (userAgent.includes('wry') || userAgent.includes('webkit'))) {
+      console.log('Detected mobile platform via Android User-Agent')
+      return 'mobile'
+    }
+
+    if (tauriFeatures.some(feature => userAgent.includes(feature))) {
+      console.log('Detected mobile platform via User-Agent features')
+      return 'mobile'
+    }
+  }
+
+  // 3. 檢查 URL protocol (Tauri 應用通常使用 tauri:// 或 https://tauri.localhost)
+  if (typeof window !== 'undefined' && window.location) {
+    const protocol = window.location.protocol
+    const hostname = window.location.hostname
+    
+    if (protocol === 'tauri:' || hostname.includes('tauri.localhost')) {
+      console.log('Detected mobile platform via URL protocol')
+      return 'mobile'
+    }
+  }
+
+  console.log('Detected web platform (fallback)')
   return 'web'
 }
 
@@ -181,11 +214,38 @@ export async function apiFetch<T = Record<string, unknown>>(
 ): Promise<T> {
   const response = await fetch(url, createApiRequest(options))
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
-  }
+  // 檢查 Content-Type 是否為 JSON
+  const contentType = response.headers.get('content-type')
+  const isJson = contentType?.includes('application/json')
 
-  return response.json()
+  // 先複製 response 以便在錯誤時讀取文本
+  const responseClone = response.clone()
+
+  // 總是嘗試解析 JSON，不論狀態碼
+  try {
+    const data = await response.json()
+    
+    // 如果響應不成功但有 JSON 數據，返回數據（讓上層處理錯誤）
+    if (!response.ok) {
+      return data
+    }
+    
+    return data
+  } catch (jsonError) {
+    // 如果 JSON 解析失敗，提供更詳細的錯誤資訊
+    const responseText = await responseClone.text().catch(() => 'Unable to read response text')
+    
+    const errorDetails = {
+      status: response.status,
+      statusText: response.statusText,
+      contentType,
+      isJson,
+      responseText: responseText.substring(0, 500), // 限制長度
+      jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError)
+    }
+    
+    throw new Error(`JSON parsing failed: ${JSON.stringify(errorDetails, null, 2)}`)
+  }
 }
 
 /**

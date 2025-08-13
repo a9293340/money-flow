@@ -59,6 +59,7 @@
           <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2" />
           {{ platformInfo.platform }} 平台 • {{ platformInfo.accessTokenDuration }}分鐘有效期
         </div>
+        
       </div>
 
       <!-- Login Form Card -->
@@ -253,9 +254,7 @@
                 <h3 class="text-sm font-medium text-danger-800 mb-1">
                   登入失敗
                 </h3>
-                <p class="text-sm text-danger-700">
-                  {{ error }}
-                </p>
+                <pre class="text-sm text-danger-700 whitespace-pre-wrap overflow-x-auto">{{ error }}</pre>
               </div>
             </div>
           </div>
@@ -392,6 +391,7 @@
         </p>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -400,7 +400,7 @@ import { apiFetch, getTokenConfig } from '~/lib/utils/client'
 
 // 頁面設定
 definePageMeta({
-  layout: false,
+  layout: 'auth',
   auth: false,
 })
 
@@ -421,7 +421,11 @@ const errors = reactive({
 })
 
 // 平台資訊
-const platformInfo = computed(() => getTokenConfig())
+const platformInfo = computed(() => {
+  const config = getTokenConfig()
+  console.log('Current platform config:', config)
+  return config
+})
 
 // 清除錯誤訊息
 function clearErrors() {
@@ -460,6 +464,10 @@ async function handleLogin() {
   clearErrors()
 
   try {
+    // 取得 runtime config 來使用完整的 API URL
+    const { public: { apiUrl } } = useRuntimeConfig()
+    const loginUrl = `${apiUrl}/login`
+    
     const response = await apiFetch<{
       success: boolean
       message: string
@@ -475,7 +483,7 @@ async function handleLogin() {
         }
       }
       errors?: string[]
-    }>('/api/login', {
+    }>(loginUrl, {
       method: 'POST',
       body: JSON.stringify({
         email: form.email,
@@ -501,7 +509,21 @@ async function handleLogin() {
   }
   catch (err) {
     console.error('Login error:', err)
-    error.value = '網路錯誤，請稍後重試'
+    // 顯示完整錯誤資訊
+    if (err instanceof Error) {
+      error.value = `網路錯誤：${err.message}`
+      // 如果錯誤訊息太長，顯示更多詳情
+      if (err.message.includes('JSON parsing failed')) {
+        try {
+          const errorData = JSON.parse(err.message.replace('JSON parsing failed: ', ''))
+          error.value = `網路錯誤：狀態 ${errorData.status} ${errorData.statusText}\n回應內容：${errorData.responseText}\n內容類型：${errorData.contentType}`
+        } catch (parseErr) {
+          error.value = `網路錯誤：${err.message}`
+        }
+      }
+    } else {
+      error.value = `網路錯誤：${JSON.stringify(err, null, 2)}`
+    }
   }
   finally {
     loading.value = false

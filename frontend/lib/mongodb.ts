@@ -7,10 +7,12 @@ import mongoose from 'mongoose'
 
 interface MongoConnection {
   isConnected: boolean
+  hasLoggedSuccess: boolean
 }
 
 const connection: MongoConnection = {
   isConnected: false,
+  hasLoggedSuccess: false,
 }
 
 /**
@@ -18,9 +20,8 @@ const connection: MongoConnection = {
  */
 export async function connectMongoDB(): Promise<void> {
   try {
-    // 如果已經連接，則直接返回
+    // 如果已經連接，則直接返回 (不重複記錄)
     if (connection.isConnected) {
-      console.log('✅ MongoDB 已連接')
       return
     }
 
@@ -49,30 +50,36 @@ export async function connectMongoDB(): Promise<void> {
 
     // 建立連接
     console.log('🔄 正在連接 MongoDB...')
+    console.log('🔍 連接字串中的資料庫名稱:', mongoUri.split('/').pop()?.split('?')[0])
     await mongoose.connect(mongoUri, options)
 
     connection.isConnected = true
+    connection.hasLoggedSuccess = true
     console.log('✅ MongoDB 連接成功')
 
     // 監聽連接事件
     mongoose.connection.on('error', (error) => {
       console.error('❌ MongoDB 連接錯誤:', error)
       connection.isConnected = false
+      connection.hasLoggedSuccess = false
     })
 
     mongoose.connection.on('disconnected', () => {
       console.warn('⚠️ MongoDB 連接斷開')
       connection.isConnected = false
+      connection.hasLoggedSuccess = false
     })
 
     mongoose.connection.on('reconnected', () => {
       console.log('🔄 MongoDB 重新連接成功')
       connection.isConnected = true
+      connection.hasLoggedSuccess = true
     })
   }
   catch (error) {
     console.error('❌ MongoDB 連接失敗:', error)
     connection.isConnected = false
+    connection.hasLoggedSuccess = false
     throw error
   }
 }

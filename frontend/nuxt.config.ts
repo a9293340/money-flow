@@ -1,4 +1,47 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+
+/**
+ * 自動取得應用程式 URL
+ * 開發環境: localhost:3000
+ * 生產環境/移動端: 使用 PRODUCTION_DOMAIN
+ */
+function getAppUrl(): string {
+  const isDev = process.env.NODE_ENV === 'development'
+  const isTauri = process.env.TAURI_PLATFORM
+  const productionDomain = process.env.PRODUCTION_DOMAIN
+
+  if (isDev && !isTauri) {
+    return 'http://localhost:3000'
+  }
+  
+  if (productionDomain) {
+    return `https://${productionDomain}`
+  }
+  
+  return 'http://localhost:3000'
+}
+
+/**
+ * 自動取得 API URL
+ * 開發環境: localhost:3000/api
+ * 生產環境/移動端: 使用 PRODUCTION_DOMAIN/api
+ */
+function getApiUrl(): string {
+  const isDev = process.env.NODE_ENV === 'development'
+  const isTauri = process.env.TAURI_PLATFORM
+  const productionDomain = process.env.PRODUCTION_DOMAIN
+
+  if (isDev && !isTauri) {
+    return 'http://localhost:3000/api'
+  }
+  
+  if (productionDomain) {
+    return `https://${productionDomain}/api`
+  }
+  
+  return 'http://localhost:3000/api'
+}
+
 export default defineNuxtConfig({
 
   // Modules 配置
@@ -9,7 +52,7 @@ export default defineNuxtConfig({
   ],
 
   // 服務端渲染配置
-  ssr: true,
+  ssr: process.env.TAURI_PLATFORM ? false : true,
 
   // 確保自動導入正常工作
   imports: {
@@ -50,12 +93,12 @@ export default defineNuxtConfig({
 
   // Runtime 配置
   runtimeConfig: {
-    // Server-side 環境變數 (只在 server 端可用) - 🔴 高機密
+    // Server-side 環境變數 (only available on server-side) - 🔴 高機密
     mongodbUri: process.env.MONGODB_URI,
     jwtSecret: process.env.JWT_SECRET,
     encryptionKey: process.env.ENCRYPTION_KEY,
 
-    // 外部服務 API - 🟡 中機密
+    // 外部服務 API - 🟡 中機密  
     exchangeRateApiKey: process.env.EXCHANGE_RATE_API_KEY,
     fcmServerKey: process.env.FCM_SERVER_KEY,
     gcsServiceAccountKey: process.env.GCS_SERVICE_ACCOUNT_KEY,
@@ -69,8 +112,8 @@ export default defineNuxtConfig({
     // Public 環境變數 (client 和 server 都可用)
     public: {
       appName: process.env.APP_NAME || 'Money Flow',
-      appUrl: process.env.APP_URL || 'http://localhost:3000',
-      apiUrl: process.env.API_URL || (process.env.NODE_ENV === 'production' ? 'https://personal-finance-manager-266039927960.asia-east1.run.app/api' : '/api'),
+      appUrl: getAppUrl(),
+      apiUrl: getApiUrl(), 
       nodeEnv: process.env.NODE_ENV || 'development',
       enableApiDocs: process.env.ENABLE_API_DOCS === 'true',
     },
@@ -84,11 +127,23 @@ export default defineNuxtConfig({
     },
     // 確保在生產環境中正確處理
     preset: 'node-server',
+    // CORS 配置 - 允許 Tauri 應用程式的請求
+    routeRules: {
+      '/api/**': {
+        cors: true,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Platform',
+          'Access-Control-Max-Age': '86400',
+        },
+      },
+    },
   },
 
   // TypeScript 配置
   typescript: {
-    typeCheck: true,
+    typeCheck: process.env.TAURI_PLATFORM ? false : true,
   },
 
   // ESLint 配置
