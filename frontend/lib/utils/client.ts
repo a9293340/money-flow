@@ -180,12 +180,6 @@ export function detectCurrentPlatform(): ClientPlatform {
 export function getApiHeaders(): HeadersInit {
   const platform = detectCurrentPlatform()
 
-  if (platform === 'mobile') {
-    // Mobile: 使用最簡單的 headers，避免 preflight
-    return {}
-  }
-
-  // Web: 使用完整 headers
   return {
     'Content-Type': 'application/json',
     'X-Client-Platform': platform,

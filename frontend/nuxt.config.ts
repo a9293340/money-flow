@@ -127,18 +127,12 @@ export default defineNuxtConfig({
     },
     // 確保在生產環境中正確處理
     preset: 'node-server',
-    // CORS 配置 - 允許 Tauri 應用程式的請求
-    routeRules: {
-      '/api/**': {
-        cors: true,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Platform',
-          'Access-Control-Max-Age': '86400',
-        },
-      },
-    },
+    // 移除固定 CORS 配置，讓 middleware 動態處理
+    // routeRules: {
+    //   '/api/**': {
+    //     cors: true,
+    //   },
+    // },
   },
 
   // TypeScript 配置
