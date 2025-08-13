@@ -629,23 +629,26 @@ function formatWelcomeTime() {
 // 載入使用者資訊
 async function loadUserInfo() {
   userError.value = '' // 清除之前的錯誤
-  
+
   try {
     const authResult = await checkAuthStatus()
-    
+
     if (authResult?.user) {
       user.value = authResult.user
-    } else {
+    }
+    else {
       userError.value = '無法取得使用者資訊'
       handleRequireLogin()
     }
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Load user info error:', error)
-    
+
     if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
       userError.value = 'Token 已過期，請重新登入'
       handleRequireLogin()
-    } else {
+    }
+    else {
       userError.value = '載入使用者資訊失敗'
     }
   }
@@ -678,7 +681,8 @@ async function testAuthMe() {
   catch (error) {
     if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
       testResult.value = '需要重新登入'
-    } else {
+    }
+    else {
       testResult.value = `錯誤: ${error}`
     }
   }

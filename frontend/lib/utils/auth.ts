@@ -16,21 +16,22 @@ export async function authenticatedFetch<T = Record<string, unknown>>(
   try {
     // 第一次嘗試請求
     return await apiFetch<T>(url, options)
-  } catch (error) {
+  }
+  catch (error) {
     console.log('API 請求失敗，檢查是否需要刷新 token:', error)
-    
+
     // 檢查是否是認證錯誤（401 或包含認證相關的錯誤訊息）
     const isAuthError = error instanceof Error && (
-      error.message.includes('401') ||
-      error.message.includes('HTTP error! status: 401') ||
-      error.message.toLowerCase().includes('unauthorized') ||
-      error.message.includes('token') ||
-      error.message.includes('過期')
+      error.message.includes('401')
+      || error.message.includes('HTTP error! status: 401')
+      || error.message.toLowerCase().includes('unauthorized')
+      || error.message.includes('token')
+      || error.message.includes('過期')
     )
-    
+
     if (isAuthError) {
       console.log('檢測到認證錯誤，嘗試刷新 token...')
-      
+
       try {
         // 嘗試刷新 token
         const refreshResponse = await apiFetch<{
@@ -53,20 +54,24 @@ export async function authenticatedFetch<T = Record<string, unknown>>(
           console.log('Token 刷新成功，重新嘗試原始請求...')
           // Token 刷新成功，重新嘗試原始請求
           return await apiFetch<T>(url, options)
-        } else if (refreshResponse.requireLogin || refreshResponse.errors?.some(err => err.includes('過期'))) {
+        }
+        else if (refreshResponse.requireLogin || refreshResponse.errors?.some(err => err.includes('過期'))) {
           // Refresh token 也過期了，需要重新登入
           console.log('Refresh token 也已過期，需要重新登入')
           throw new Error('REQUIRE_LOGIN')
-        } else {
+        }
+        else {
           // 其他刷新失敗的情況
           throw new Error(`Token 刷新失敗: ${refreshResponse.message}`)
         }
-      } catch (refreshError) {
+      }
+      catch (refreshError) {
         console.error('Token 刷新過程出錯:', refreshError)
         // 如果刷新失敗，拋出需要登入的錯誤
         throw new Error('REQUIRE_LOGIN')
       }
-    } else {
+    }
+    else {
       // 不是認證錯誤，直接拋出原始錯誤
       throw error
     }
@@ -93,7 +98,8 @@ export async function checkAuthStatus(): Promise<{
       return { user: response.data.user }
     }
     return null
-  } catch (error) {
+  }
+  catch (error) {
     console.log('認證檢查失敗:', error)
     return null
   }

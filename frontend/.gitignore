@@ -34,6 +34,7 @@ android-sdk/
 
 # Android 建置輸出
 *.apk
+*.apks
 *.aab
 *.dex
 *.class

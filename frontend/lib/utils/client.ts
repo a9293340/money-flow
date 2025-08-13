@@ -145,7 +145,7 @@ export function detectCurrentPlatform(): ClientPlatform {
   if (typeof navigator !== 'undefined') {
     const userAgent = navigator.userAgent.toLowerCase()
     const tauriFeatures = ['tauri', 'wry', 'webkit', 'android']
-    
+
     // 對於 Android Tauri 應用，檢查特定模式
     if (userAgent.includes('android') && (userAgent.includes('wry') || userAgent.includes('webkit'))) {
       console.log('Detected mobile platform via Android User-Agent')
@@ -162,7 +162,7 @@ export function detectCurrentPlatform(): ClientPlatform {
   if (typeof window !== 'undefined' && window.location) {
     const protocol = window.location.protocol
     const hostname = window.location.hostname
-    
+
     if (protocol === 'tauri:' || hostname.includes('tauri.localhost')) {
       console.log('Detected mobile platform via URL protocol')
       return 'mobile'
@@ -193,9 +193,11 @@ export function getApiHeaders(): HeadersInit {
  */
 export function createApiRequest(options: RequestInit = {}): RequestInit {
   const defaultHeaders = getApiHeaders()
+  const platform = detectCurrentPlatform()
 
   return {
-    credentials: 'include', // 包含 cookies
+    // 在 mobile 環境中不使用 credentials 避免 CORS 問題
+    ...(platform === 'web' ? { credentials: 'include' as RequestCredentials } : {}),
     ...options,
     headers: {
       ...defaultHeaders,
@@ -224,26 +226,27 @@ export async function apiFetch<T = Record<string, unknown>>(
   // 總是嘗試解析 JSON，不論狀態碼
   try {
     const data = await response.json()
-    
+
     // 如果響應不成功但有 JSON 數據，返回數據（讓上層處理錯誤）
     if (!response.ok) {
       return data
     }
-    
+
     return data
-  } catch (jsonError) {
+  }
+  catch (jsonError) {
     // 如果 JSON 解析失敗，提供更詳細的錯誤資訊
     const responseText = await responseClone.text().catch(() => 'Unable to read response text')
-    
+
     const errorDetails = {
       status: response.status,
       statusText: response.statusText,
       contentType,
       isJson,
       responseText: responseText.substring(0, 500), // 限制長度
-      jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError)
+      jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError),
     }
-    
+
     throw new Error(`JSON parsing failed: ${JSON.stringify(errorDetails, null, 2)}`)
   }
 }

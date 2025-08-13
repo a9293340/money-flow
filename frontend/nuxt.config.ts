@@ -13,11 +13,11 @@ function getAppUrl(): string {
   if (isDev && !isTauri) {
     return 'http://localhost:3000'
   }
-  
+
   if (productionDomain) {
     return `https://${productionDomain}`
   }
-  
+
   return 'http://localhost:3000'
 }
 
@@ -34,11 +34,11 @@ function getApiUrl(): string {
   if (isDev && !isTauri) {
     return 'http://localhost:3000/api'
   }
-  
+
   if (productionDomain) {
     return `https://${productionDomain}/api`
   }
-  
+
   return 'http://localhost:3000/api'
 }
 
@@ -98,7 +98,7 @@ export default defineNuxtConfig({
     jwtSecret: process.env.JWT_SECRET,
     encryptionKey: process.env.ENCRYPTION_KEY,
 
-    // 外部服務 API - 🟡 中機密  
+    // 外部服務 API - 🟡 中機密
     exchangeRateApiKey: process.env.EXCHANGE_RATE_API_KEY,
     fcmServerKey: process.env.FCM_SERVER_KEY,
     gcsServiceAccountKey: process.env.GCS_SERVICE_ACCOUNT_KEY,
@@ -113,7 +113,7 @@ export default defineNuxtConfig({
     public: {
       appName: process.env.APP_NAME || 'Money Flow',
       appUrl: getAppUrl(),
-      apiUrl: getApiUrl(), 
+      apiUrl: getApiUrl(),
       nodeEnv: process.env.NODE_ENV || 'development',
       enableApiDocs: process.env.ENABLE_API_DOCS === 'true',
     },
