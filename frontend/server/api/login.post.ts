@@ -170,8 +170,12 @@ export default defineEventHandler(async (event) => {
       platform,
     )
 
-    // 設定 Cookie (使用動態平台設定)
-    setAuthCookies(event, accessToken, refreshToken, platform)
+    // 根據平台設定認證方式
+    if (platform === 'web') {
+      // Web: 設定 Cookie
+      setAuthCookies(event, accessToken, refreshToken, platform)
+    }
+    // Mobile: 不設定 Cookie，由客戶端處理 localStorage
 
     // 記錄成功登入
     const duration = Date.now() - startTime
@@ -184,7 +188,7 @@ export default defineEventHandler(async (event) => {
       platform: platform,
     })
 
-    // 返回成功結果（不包含敏感資訊）
+    // 返回成功結果（包含 tokens 供移動端使用）
     return {
       success: true,
       message: '登入成功',
@@ -200,6 +204,7 @@ export default defineEventHandler(async (event) => {
           accessToken,
           refreshToken,
         },
+        platform,
       },
     }
   }

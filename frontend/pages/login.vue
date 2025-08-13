@@ -394,7 +394,7 @@
 </template>
 
 <script setup lang="ts">
-import { apiFetch, getTokenConfig, getApiUrl } from '~/lib/utils/client'
+import { apiFetch, getTokenConfig, getApiUrl, saveTokensToStorage, detectCurrentPlatform } from '~/lib/utils/client'
 
 // 頁面設定
 definePageMeta({
@@ -491,6 +491,16 @@ async function handleLogin() {
 
     if (response.success) {
       success.value = response.message || '登入成功！'
+
+      // 移動端將 tokens 儲存到 localStorage
+      const platform = detectCurrentPlatform()
+      if (platform === 'mobile' && response.data?.tokens) {
+        saveTokensToStorage(
+          response.data.tokens.accessToken,
+          response.data.tokens.refreshToken,
+        )
+        console.log('移動端 tokens 已儲存到 localStorage')
+      }
 
       // 延遲跳轉到 dashboard
       setTimeout(() => {

@@ -3,7 +3,7 @@
  * 處理 token 自動刷新、認證狀態管理等
  */
 
-import { apiFetch } from './client'
+import { apiFetch, detectCurrentPlatform, saveTokensToStorage, clearTokensFromStorage } from './client'
 
 /**
  * 帶有自動 token 刷新功能的 API 請求函數
@@ -33,6 +33,19 @@ export async function authenticatedFetch<T = Record<string, unknown>>(
       console.log('檢測到認證錯誤，嘗試刷新 token...')
 
       try {
+        // 移動端需要在 refresh 請求中發送 refresh token
+        const platform = detectCurrentPlatform()
+        const refreshOptions: RequestInit = { method: 'POST' }
+
+        if (platform === 'mobile') {
+          const refreshToken = localStorage.getItem('refresh_token')
+          if (refreshToken) {
+            refreshOptions.headers = {
+              'X-Refresh-Token': refreshToken,
+            }
+          }
+        }
+
         // 嘗試刷新 token
         const refreshResponse = await apiFetch<{
           success: boolean
@@ -46,12 +59,19 @@ export async function authenticatedFetch<T = Record<string, unknown>>(
           }
           requireLogin?: boolean
           errors?: string[]
-        }>('/api/auth/refresh', {
-          method: 'POST',
-        })
+        }>('/api/auth/refresh', refreshOptions)
 
         if (refreshResponse.success) {
           console.log('Token 刷新成功，重新嘗試原始請求...')
+
+          // 移動端更新 localStorage 中的 tokens
+          if (platform === 'mobile' && refreshResponse.data?.tokens) {
+            saveTokensToStorage(
+              refreshResponse.data.tokens.accessToken,
+              refreshResponse.data.tokens.refreshToken,
+            )
+          }
+
           // Token 刷新成功，重新嘗試原始請求
           return await apiFetch<T>(url, options)
         }
@@ -111,7 +131,14 @@ export async function checkAuthStatus(): Promise<{
  */
 export function handleRequireLogin(message = 'Token 已過期，請重新登入') {
   console.warn(message)
-  // 清除可能的錯誤狀態
+
+  // 移動端清除 localStorage 中的 tokens
+  const platform = detectCurrentPlatform()
+  if (platform === 'mobile') {
+    clearTokensFromStorage()
+    console.log('已清除移動端 localStorage 中的 tokens')
+  }
+
   // 跳轉到登入頁面
   navigateTo('/login')
 }

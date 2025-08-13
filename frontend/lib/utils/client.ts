@@ -187,21 +187,64 @@ export function detectCurrentPlatform(): ClientPlatform {
 // }
 
 /**
+ * 從 localStorage 取得 access token (移動端使用)
+ */
+function getAccessTokenFromStorage(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('access_token')
+}
+
+/**
+ * 從 localStorage 取得 refresh token (移動端使用)
+ */
+export function getRefreshTokenFromStorage(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('refresh_token')
+}
+
+/**
+ * 儲存 tokens 到 localStorage (移動端使用)
+ */
+export function saveTokensToStorage(accessToken: string, refreshToken: string) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('access_token', accessToken)
+  localStorage.setItem('refresh_token', refreshToken)
+}
+
+/**
+ * 清除 localStorage 中的 tokens (移動端使用)
+ */
+export function clearTokensFromStorage() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+}
+
+/**
  * 創建包含認證資訊的 fetch 選項 (瀏覽器端使用)
  * @param options 額外的 fetch 選項
  * @returns 完整的 fetch 選項
  */
 export function createApiRequest(options: RequestInit = {}): RequestInit {
-  // const defaultHeaders = getApiHeaders()
+  const platform = detectCurrentPlatform()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> || {}),
+  }
+
+  // 移動端加入 Authorization header
+  if (platform === 'mobile') {
+    const accessToken = getAccessTokenFromStorage()
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`
+    }
+  }
 
   return {
     ...options,
-    headers: {
-      // ...defaultHeaders,
-      ...(options.headers || {}),
-    },
-    // 全面停用 credentials，確保與 CORS '*' 相容
-    // credentials: 'omit' 可以明確指定不發送 credentials
+    headers,
+    // Web 端使用 credentials 發送 cookies，移動端不需要
+    ...(platform === 'web' ? { credentials: 'include' as RequestCredentials } : {}),
   }
 }
 

@@ -308,7 +308,26 @@ export function getAccessTokenFromEvent(event: H3Event): string | undefined {
  * 從 Event 取得 Refresh Token
  */
 export function getRefreshTokenFromEvent(event: H3Event): string | undefined {
-  return getCookie(event, TOKEN_CONFIG.refresh.cookieName)
+  // 1. 優先從 Cookie 取得 (Web 端)
+  const cookieToken = getCookie(event, TOKEN_CONFIG.refresh.cookieName)
+  if (cookieToken) {
+    return cookieToken
+  }
+
+  // 2. 從 Authorization Header 取得 refresh token (移動端)
+  // 移動端可能在 Authorization header 中發送 refresh token
+  const authHeader = getHeader(event, 'authorization')
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7)
+  }
+
+  // 3. 從自定義 header 取得 (移動端的另一種方式)
+  const refreshHeader = getHeader(event, 'x-refresh-token')
+  if (refreshHeader) {
+    return refreshHeader
+  }
+
+  return undefined
 }
 
 /**
