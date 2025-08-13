@@ -7,6 +7,12 @@ export default defineEventHandler(async (event) => {
     // 連接資料庫
     await connectMongoDB()
 
+    console.log(JSON.stringify({
+      test: '測試三 : JSON.stringify',
+      level: 'INFO',
+      message: '這是一個測試訊息',
+    }))
+
     // 從請求中取得 Access Token
     const accessToken = getAccessTokenFromEvent(event)
     if (!accessToken) {

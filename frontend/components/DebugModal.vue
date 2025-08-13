@@ -216,7 +216,7 @@
 </template>
 
 <script setup lang="ts">
-import { getTokenConfig } from '~/lib/utils/client'
+import { getApiUrl, getTokenConfig } from '~/lib/utils/client'
 
 interface Props {
   show: boolean
@@ -258,8 +258,6 @@ const debugInfo = computed(() => {
   if (typeof navigator !== 'undefined') {
     userAgent = navigator.userAgent
   }
-
-  const runtimeConfig = useRuntimeConfig()
 
   // Token 資訊檢查
   let tokenExists = false
@@ -319,7 +317,7 @@ const debugInfo = computed(() => {
       url,
       protocol,
       hostname,
-      apiUrl: runtimeConfig.public.apiUrl,
+      apiUrl: getApiUrl(),
     },
     tauri: {
       hasTauri,
