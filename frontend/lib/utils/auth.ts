@@ -106,21 +106,51 @@ export async function checkAuthStatus(): Promise<{
   user: Record<string, unknown>
 } | null> {
   try {
+    const platform = detectCurrentPlatform()
+    console.log(`認證狀態檢查 - 平台: ${platform}`)
+
     const response = await authenticatedFetch<{
       success: boolean
       message: string
       data?: {
         user: Record<string, unknown>
       }
+      requireLogin?: boolean
+      errors?: string[]
     }>('/api/auth/me')
 
+    console.log('認證狀態檢查響應:', response)
+
     if (response.success && response.data?.user) {
+      console.log('認證狀態檢查成功')
       return { user: response.data.user }
     }
+
+    if (response.requireLogin) {
+      console.log('認證狀態檢查失敗: 需要登入')
+      throw new Error('REQUIRE_LOGIN')
+    }
+
+    console.log('認證狀態檢查失敗: 未知原因')
     return null
   }
   catch (error) {
-    console.log('認證檢查失敗:', error)
+    console.log('認證檢查過程出錯:', error)
+
+    if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
+      throw error
+    }
+
+    // 對於其他錯誤，檢查是否包含需要重新登入的標誌
+    const errorString = String(error)
+    if (errorString.includes('401')
+      || errorString.includes('unauthorized')
+      || errorString.includes('token')
+      || errorString.includes('過期')) {
+      console.log('從錯誤訊息判斷需要重新登入')
+      throw new Error('REQUIRE_LOGIN')
+    }
+
     return null
   }
 }

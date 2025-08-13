@@ -122,55 +122,74 @@ export function isPrivateIP(ip: string): boolean {
  * @returns 客戶端平台類型
  */
 export function detectCurrentPlatform(): ClientPlatform {
+  // Server side 回傳預設值
+  if (typeof window === 'undefined') {
+    return 'web'
+  }
+
+  // 使用緩存避免重複檢測
+  if ((window as unknown as Record<string, unknown>).__PLATFORM_CACHE__) {
+    return (window as unknown as Record<string, unknown>).__PLATFORM_CACHE__ as ClientPlatform
+  }
+
+  let platform: ClientPlatform = 'web'
+
   // 調試資訊
-  if (typeof window !== 'undefined') {
-    console.log('Platform detection debug:', {
-      hasTauri: !!(window as unknown as Record<string, unknown>).__TAURI__,
-      hasInvoke: !!(window as unknown as Record<string, unknown>).__TAURI_INVOKE__,
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
-      windowKeys: Object.keys(window).filter(key => key.includes('TAURI') || key.includes('tauri')),
-    })
+  const debugInfo = {
+    hasTauri: !!(window as unknown as Record<string, unknown>).__TAURI__,
+    hasInvoke: !!(window as unknown as Record<string, unknown>).__TAURI_INVOKE__,
+    hasTauriCore: !!(window as unknown as Record<string, unknown>).__TAURI_CORE__,
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+    protocol: window.location?.protocol,
+    hostname: window.location?.hostname,
+    windowKeys: Object.keys(window).filter(key =>
+      key.toLowerCase().includes('tauri')
+      || key.toLowerCase().includes('wry')
+      || key.toLowerCase().includes('android'),
+    ),
   }
 
-  // 1. 檢查 Tauri API 是否存在
-  if (typeof window !== 'undefined') {
-    const w = window as unknown as Record<string, unknown>
-    if (w.__TAURI__ || w.__TAURI_INVOKE__ || w.tauri) {
-      console.log('Detected mobile platform via Tauri API')
-      return 'mobile'
-    }
+  console.log('Platform detection debug:', debugInfo)
+
+  // 1. 檢查 Tauri API 是否存在 (最準確的方法)
+  const w = window as unknown as Record<string, unknown>
+  if (w.__TAURI__ || w.__TAURI_INVOKE__ || w.__TAURI_CORE__ || w.tauri) {
+    platform = 'mobile'
+    console.log('✅ Detected mobile platform via Tauri API')
   }
-
-  // 2. 檢查 User-Agent 中的 Tauri 特徵
-  if (typeof navigator !== 'undefined') {
-    const userAgent = navigator.userAgent.toLowerCase()
-    const tauriFeatures = ['tauri', 'wry', 'webkit', 'android']
-
-    // 對於 Android Tauri 應用，檢查特定模式
-    if (userAgent.includes('android') && (userAgent.includes('wry') || userAgent.includes('webkit'))) {
-      console.log('Detected mobile platform via Android User-Agent')
-      return 'mobile'
-    }
-
-    if (tauriFeatures.some(feature => userAgent.includes(feature))) {
-      console.log('Detected mobile platform via User-Agent features')
-      return 'mobile'
-    }
-  }
-
-  // 3. 檢查 URL protocol (Tauri 應用通常使用 tauri:// 或 https://tauri.localhost)
-  if (typeof window !== 'undefined' && window.location) {
+  // 2. 檢查 URL protocol 和 hostname
+  else if (window.location) {
     const protocol = window.location.protocol
     const hostname = window.location.hostname
 
-    if (protocol === 'tauri:' || hostname.includes('tauri.localhost')) {
-      console.log('Detected mobile platform via URL protocol')
-      return 'mobile'
+    if (protocol === 'tauri:'
+      || hostname.includes('tauri.localhost')
+      || hostname.startsWith('tauri://')
+      || (hostname.includes('localhost') && protocol === 'https:')) {
+      platform = 'mobile'
+      console.log('✅ Detected mobile platform via URL protocol/hostname')
+    }
+  }
+  // 3. 檢查 User-Agent 中的 Tauri 特徵 (最後手段)
+  else if (typeof navigator !== 'undefined') {
+    const userAgent = navigator.userAgent.toLowerCase()
+
+    // 更精確的 Tauri Android 檢測
+    const hasTauriSignature = userAgent.includes('money-flow') || userAgent.includes('tauri')
+    const hasAndroidWebkit = userAgent.includes('android')
+      && (userAgent.includes('wry') || userAgent.includes('webkit'))
+
+    if (hasTauriSignature || hasAndroidWebkit) {
+      platform = 'mobile'
+      console.log('✅ Detected mobile platform via User-Agent features')
     }
   }
 
-  console.log('Detected web platform (fallback)')
-  return 'web'
+  // 緩存結果
+  ;(window as unknown as Record<string, unknown>).__PLATFORM_CACHE__ = platform
+
+  console.log(`🎯 Final platform detection: ${platform}`)
+  return platform
 }
 
 /**

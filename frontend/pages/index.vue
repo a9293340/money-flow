@@ -628,7 +628,7 @@
 </template>
 
 <script setup lang="ts">
-import { getTokenConfig, getApiUrl } from '~/lib/utils/client'
+import { getTokenConfig, apiFetch, detectCurrentPlatform } from '~/lib/utils/client'
 
 // 頁面設定
 definePageMeta({
@@ -637,13 +637,16 @@ definePageMeta({
 })
 
 // 檢查用戶是否已登入，如果是則導向 dashboard
+let isChecking = false // 防止重複檢查
 onMounted(async () => {
+  if (isChecking) return
+  isChecking = true
+
   try {
-    const apiUrl = getApiUrl()
-    const authMeUrl = `${apiUrl}/auth/me`
-    const response = await $fetch(authMeUrl, {
-      credentials: 'include',
-    }) as {
+    const platform = detectCurrentPlatform()
+    console.log(`首頁認證檢查 - 平台: ${platform}`)
+
+    const response = await apiFetch<{
       success: boolean
       message: string
       data?: {
@@ -656,21 +659,36 @@ onMounted(async () => {
       errors?: string[]
       requireLogin?: boolean
       error?: string
-    }
+    }>('/api/auth/me', {
+      method: 'GET',
+    })
+
+    console.log('首頁認證檢查響應:', response)
 
     if (response.success && response.data?.user) {
+      console.log('用戶已登入，導向 dashboard')
       // 用戶已登入，導向 dashboard
       await navigateTo('/dashboard', { replace: true })
     }
+    else {
+      console.log('用戶未登入，繼續顯示首頁')
+    }
   }
-  catch {
+  catch (error) {
     // 用戶未登入或 token 無效，繼續顯示首頁
-    console.log('用戶未登入或 token 無效')
+    console.log('首頁認證檢查失敗（正常情況）:', error)
+  }
+  finally {
+    isChecking = false
   }
 })
 
 // 平台資訊
-const platformInfo = computed(() => getTokenConfig())
+const platformInfo = computed(() => {
+  const config = getTokenConfig()
+  console.log('首頁平台資訊:', config)
+  return config
+})
 
 // SEO
 useHead({

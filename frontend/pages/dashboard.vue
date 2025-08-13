@@ -631,25 +631,41 @@ async function loadUserInfo() {
   userError.value = '' // 清除之前的錯誤
 
   try {
+    console.log('Dashboard: 開始載入使用者資訊...')
     const authResult = await checkAuthStatus()
+    console.log('Dashboard: 認證檢查結果:', authResult)
 
     if (authResult?.user) {
       user.value = authResult.user
+      console.log('Dashboard: 使用者資訊載入成功')
     }
     else {
+      console.log('Dashboard: 無法取得使用者資訊')
       userError.value = '無法取得使用者資訊'
-      handleRequireLogin()
+      // 給予更多時間讓token刷新完成，避免立即重定向
+      setTimeout(() => {
+        if (!user.value) {
+          console.log('Dashboard: 延遲後仍無使用者資訊，重定向到登入頁')
+          handleRequireLogin()
+        }
+      }, 2000)
     }
   }
   catch (error) {
-    console.error('Load user info error:', error)
+    console.error('Dashboard: 載入使用者資訊錯誤:', error)
 
     if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
+      console.log('Dashboard: Token 要求重新登入')
       userError.value = 'Token 已過期，請重新登入'
-      handleRequireLogin()
+      // 延遲重定向，給予token刷新機會
+      setTimeout(() => {
+        handleRequireLogin()
+      }, 1500)
     }
     else {
+      console.log('Dashboard: 其他載入錯誤')
       userError.value = '載入使用者資訊失敗'
+      // 對於非認證錯誤，不自動重定向
     }
   }
 }
