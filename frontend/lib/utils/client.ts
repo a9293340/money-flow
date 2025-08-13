@@ -195,15 +195,21 @@ export function createApiRequest(options: RequestInit = {}): RequestInit {
   const defaultHeaders = getApiHeaders()
   const platform = detectCurrentPlatform()
 
-  return {
-    // 在 mobile 環境中不使用 credentials 避免 CORS 問題
-    ...(platform === 'web' ? { credentials: 'include' as RequestCredentials } : {}),
+  const baseConfig: RequestInit = {
     ...options,
     headers: {
       ...defaultHeaders,
       ...(options.headers || {}),
     },
   }
+
+  // 只有 web 平台才使用 credentials
+  if (platform === 'web') {
+    baseConfig.credentials = 'include'
+  }
+  // mobile 平台明確不設定 credentials，確保不會觸發 preflight
+
+  return baseConfig
 }
 
 /**
