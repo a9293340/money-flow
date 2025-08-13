@@ -51,7 +51,8 @@ spec:
               value: '0.0.0.0'
             - name: NUXT_PORT
               value: '3000'
-
+            - name: PRODUCTION_DOMAIN
+              value: 'personal-finance-manager-266039927960.asia-east1.run.app'
             # 從 Secret Manager 讀取機密資料
             - name: MONGODB_URI
               valueFrom:
