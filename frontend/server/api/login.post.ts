@@ -9,6 +9,13 @@ import {
   generateTokenId,
   detectClientPlatform,
 } from '~/lib/auth/jwt'
+import {
+  logApiError,
+  logValidationError,
+  logSecurityEvent,
+  logAuthEvent,
+  type ApiLogContext,
+} from '~/lib/utils/logger'
 
 // 登入驗證 Schema
 const loginSchema = z.object({
@@ -18,6 +25,21 @@ const loginSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
+  const startTime = Date.now()
+  const apiUrl = '/api/login'
+  const method = 'POST'
+  const clientIP = getClientIP(event)
+  const userAgent = getHeader(event, 'user-agent') || 'unknown'
+  const platform = getHeader(event, 'x-client-platform') || 'unknown'
+
+  const logContext: ApiLogContext = {
+    apiUrl,
+    method,
+    ip: clientIP,
+    userAgent,
+    platform,
+  }
+
   try {
     // 連接資料庫
     await connectMongoDB()
@@ -53,10 +75,18 @@ export default defineEventHandler(async (event) => {
     // Zod 驗證
     const validationResult = loginSchema.safeParse(body)
     if (!validationResult.success) {
+      const errors = validationResult.error.issues.map(err => err.message)
+
+      logValidationError('登入資料驗證失敗', {
+        ...logContext,
+        validationErrors: errors,
+        email: body?.email || 'unknown',
+      })
+
       return {
         success: false,
         message: '輸入資料驗證失敗',
-        errors: validationResult.error.issues.map(err => err.message),
+        errors,
       }
     }
 
@@ -65,6 +95,11 @@ export default defineEventHandler(async (event) => {
     // 查找使用者（包含密碼）
     const user = await User.findOne({ email: email.toLowerCase() }).select('+passwordHash')
     if (!user) {
+      logSecurityEvent('登入嘗試失敗 - 使用者不存在', {
+        ...logContext,
+        email: email.toLowerCase(),
+      })
+
       return {
         success: false,
         message: '電子郵件或密碼錯誤',
@@ -74,6 +109,12 @@ export default defineEventHandler(async (event) => {
 
     // 檢查帳戶是否被鎖定
     if (user.isLocked && user.isLocked()) {
+      logSecurityEvent('登入嘗試失敗 - 帳戶被鎖定', {
+        ...logContext,
+        email: email.toLowerCase(),
+        userId: user._id.toString(),
+      })
+
       return {
         success: false,
         message: '帳戶已被暫時鎖定，請稍後再試',
@@ -86,6 +127,12 @@ export default defineEventHandler(async (event) => {
     if (!isValidPassword) {
       // 增加失敗嘗試次數
       await user.incLoginAttempts()
+
+      logSecurityEvent('登入嘗試失敗 - 密碼錯誤', {
+        ...logContext,
+        email: email.toLowerCase(),
+        userId: user._id.toString(),
+      })
 
       return {
         success: false,
@@ -126,6 +173,17 @@ export default defineEventHandler(async (event) => {
     // 設定 Cookie (使用動態平台設定)
     setAuthCookies(event, accessToken, refreshToken, platform)
 
+    // 記錄成功登入
+    const duration = Date.now() - startTime
+    logAuthEvent('使用者登入成功', {
+      ...logContext,
+      userId: user._id.toString(),
+      email: user.email,
+      duration,
+      statusCode: 200,
+      platform: platform,
+    })
+
     // 返回成功結果（不包含敏感資訊）
     return {
       success: true,
@@ -146,7 +204,14 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (error: unknown) {
-    console.error('登入 API 錯誤:', error)
+    const duration = Date.now() - startTime
+
+    logApiError('登入 API 發生錯誤', {
+      ...logContext,
+      error,
+      duration,
+      statusCode: 500,
+    })
 
     return {
       success: false,

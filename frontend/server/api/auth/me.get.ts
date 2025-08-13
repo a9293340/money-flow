@@ -1,21 +1,31 @@
+import { getHeader } from 'h3'
 import { connectMongoDB } from '~/lib/mongodb'
 import { User } from '~/lib/models/user'
 import { verifyAccessToken, getAccessTokenFromEvent } from '~/lib/auth/jwt'
+import { logApiError, logApiSuccess, logSecurityEvent, type ApiLogContext } from '~/lib/utils/logger'
 
 export default defineEventHandler(async (event) => {
+  const startTime = Date.now()
+  const apiUrl = '/api/auth/me'
+  const method = 'GET'
+
+  const logContext: ApiLogContext = {
+    apiUrl,
+    method,
+    ip: getClientIP(event),
+    userAgent: getHeader(event, 'user-agent') || 'unknown',
+    platform: getHeader(event, 'x-client-platform') || 'unknown',
+  }
+
   try {
     // 連接資料庫
     await connectMongoDB()
 
-    console.log(JSON.stringify({
-      test: '測試三 : JSON.stringify',
-      level: 'INFO',
-      message: '這是一個測試訊息',
-    }))
-
     // 從請求中取得 Access Token
     const accessToken = getAccessTokenFromEvent(event)
     if (!accessToken) {
+      logSecurityEvent('存取使用者資訊失敗 - 未提供 token', logContext)
+
       setResponseStatus(event, 401)
       return {
         success: false,
@@ -31,6 +41,11 @@ export default defineEventHandler(async (event) => {
     // 查找使用者
     const user = await User.findById(payload.userId)
     if (!user) {
+      logSecurityEvent('存取使用者資訊失敗 - 使用者不存在', {
+        ...logContext,
+        userId: payload.userId,
+      })
+
       setResponseStatus(event, 401)
       return {
         success: false,
@@ -42,6 +57,12 @@ export default defineEventHandler(async (event) => {
 
     // 檢查帳戶是否被鎖定
     if (user.isLocked && user.isLocked()) {
+      logSecurityEvent('存取使用者資訊失敗 - 帳戶被鎖定', {
+        ...logContext,
+        userId: user._id.toString(),
+        email: user.email,
+      })
+
       setResponseStatus(event, 401)
       return {
         success: false,
@@ -50,6 +71,15 @@ export default defineEventHandler(async (event) => {
         requireLogin: true,
       }
     }
+
+    const duration = Date.now() - startTime
+    logApiSuccess('使用者資訊取得成功', {
+      ...logContext,
+      userId: user._id.toString(),
+      email: user.email,
+      duration,
+      statusCode: 200,
+    })
 
     return {
       success: true,
@@ -69,10 +99,17 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (error: unknown) {
-    console.error('取得使用者資訊錯誤:', error)
+    const duration = Date.now() - startTime
 
     // Token 過期或無效
     if (error instanceof Error && (error.message.includes('過期') || error.message.includes('無效'))) {
+      logSecurityEvent('Token 驗證失敗', {
+        ...logContext,
+        error: error.message,
+        duration,
+        statusCode: 401,
+      })
+
       setResponseStatus(event, 401)
       return {
         success: false,
@@ -82,6 +119,13 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    logApiError('取得使用者資訊 API 發生錯誤', {
+      ...logContext,
+      error,
+      duration,
+      statusCode: 500,
+    })
+
     return {
       success: false,
       message: '取得使用者資訊失敗',
@@ -90,3 +134,16 @@ export default defineEventHandler(async (event) => {
     }
   }
 })
+
+// 輔助函數：獲取客戶端 IP
+function getClientIP(event: Parameters<typeof defineEventHandler>[0]): string {
+  const forwarded = getHeader(event, 'x-forwarded-for')
+  const realIP = getHeader(event, 'x-real-ip')
+  const remoteAddress = event.node.req.socket?.remoteAddress
+
+  if (typeof forwarded === 'string') {
+    return forwarded.split(',')[0].trim()
+  }
+
+  return (realIP as string) || remoteAddress || 'unknown'
+}
