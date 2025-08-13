@@ -1,4 +1,4 @@
-import { getHeader } from 'h3'
+import { getHeader, type H3Event } from 'h3'
 import { connectMongoDB } from '~/lib/mongodb'
 import { User } from '~/lib/models/user'
 import { verifyAccessToken, getAccessTokenFromEvent } from '~/lib/auth/jwt'
@@ -136,7 +136,7 @@ export default defineEventHandler(async (event) => {
 })
 
 // 輔助函數：獲取客戶端 IP
-function getClientIP(event: Parameters<typeof defineEventHandler>[0]): string {
+function getClientIP(event: H3Event): string {
   const forwarded = getHeader(event, 'x-forwarded-for')
   const realIP = getHeader(event, 'x-real-ip')
   const remoteAddress = event.node.req.socket?.remoteAddress
