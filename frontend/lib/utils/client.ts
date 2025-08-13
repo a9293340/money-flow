@@ -248,6 +248,7 @@ export function createApiRequest(options: RequestInit = {}): RequestInit {
   const platform = detectCurrentPlatform()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-Client-Platform': platform, // 添加平台標識 header
     ...(options.headers as Record<string, string> || {}),
   }
 
@@ -280,12 +281,17 @@ export async function mobileLoginFetch<T = Record<string, unknown>>(
   formData.append('password', data.password)
   formData.append('rememberMe', data.rememberMe.toString())
 
+  const platform = detectCurrentPlatform()
+  const headers: Record<string, string> = {
+    'X-Client-Platform': platform, // 添加平台標識
+  }
+
   const response = await fetch(url, {
     method: 'POST',
     body: formData,
+    headers,
     // 不設定 Content-Type，讓瀏覽器自動設定為 multipart/form-data
     // 不使用 credentials
-    // 不使用自定義 headers
   })
 
   return response.json()

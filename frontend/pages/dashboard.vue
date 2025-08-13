@@ -595,7 +595,7 @@
 
 <script setup lang="ts">
 import { apiFetch, getTokenConfig, getApiUrl } from '~/lib/utils/client'
-import { authenticatedFetch, checkAuthStatus, handleRequireLogin } from '~/lib/utils/auth'
+import { authenticatedFetch, handleRequireLogin } from '~/lib/utils/auth'
 
 // 頁面設定
 definePageMeta({
@@ -632,35 +632,40 @@ async function loadUserInfo() {
 
   try {
     console.log('Dashboard: 開始載入使用者資訊...')
-    const authResult = await checkAuthStatus()
-    console.log('Dashboard: 認證檢查結果:', authResult)
+    // 直接使用 authenticatedFetch，它會自動處理 token 刷新
+    const response = await authenticatedFetch<{
+      success: boolean
+      message: string
+      data?: {
+        user: Record<string, unknown>
+      }
+      requireLogin?: boolean
+      errors?: string[]
+    }>('/api/auth/me')
 
-    if (authResult?.user) {
-      user.value = authResult.user
+    console.log('Dashboard: 認證檢查結果:', response)
+
+    if (response.success && response.data?.user) {
+      user.value = response.data.user
       console.log('Dashboard: 使用者資訊載入成功')
     }
+    else if (response.requireLogin) {
+      console.log('Dashboard: 需要重新登入')
+      userError.value = '需要重新登入'
+      handleRequireLogin()
+    }
     else {
-      console.log('Dashboard: 無法取得使用者資訊')
-      userError.value = '無法取得使用者資訊'
-      // 給予更多時間讓token刷新完成，避免立即重定向
-      setTimeout(() => {
-        if (!user.value) {
-          console.log('Dashboard: 延遲後仍無使用者資訊，重定向到登入頁')
-          handleRequireLogin()
-        }
-      }, 2000)
+      console.log('Dashboard: 認證失敗，但不需要重新登入')
+      userError.value = response.message || '載入使用者資訊失敗'
     }
   }
   catch (error) {
     console.error('Dashboard: 載入使用者資訊錯誤:', error)
 
     if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
-      console.log('Dashboard: Token 要求重新登入')
+      console.log('Dashboard: Token 刷新失敗，需要重新登入')
       userError.value = 'Token 已過期，請重新登入'
-      // 延遲重定向，給予token刷新機會
-      setTimeout(() => {
-        handleRequireLogin()
-      }, 1500)
+      handleRequireLogin()
     }
     else {
       console.log('Dashboard: 其他載入錯誤')

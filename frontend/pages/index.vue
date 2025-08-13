@@ -628,7 +628,8 @@
 </template>
 
 <script setup lang="ts">
-import { getTokenConfig, apiFetch, detectCurrentPlatform } from '~/lib/utils/client'
+import { getTokenConfig, detectCurrentPlatform } from '~/lib/utils/client'
+import { authenticatedFetch } from '~/lib/utils/auth'
 
 // 頁面設定
 definePageMeta({
@@ -646,7 +647,7 @@ onMounted(async () => {
     const platform = detectCurrentPlatform()
     console.log(`首頁認證檢查 - 平台: ${platform}`)
 
-    const response = await apiFetch<{
+    const response = await authenticatedFetch<{
       success: boolean
       message: string
       data?: {
@@ -659,9 +660,7 @@ onMounted(async () => {
       errors?: string[]
       requireLogin?: boolean
       error?: string
-    }>('/api/auth/me', {
-      method: 'GET',
-    })
+    }>('/api/auth/me')
 
     console.log('首頁認證檢查響應:', response)
 
@@ -675,8 +674,14 @@ onMounted(async () => {
     }
   }
   catch (error) {
-    // 用戶未登入或 token 無效，繼續顯示首頁
-    console.log('首頁認證檢查失敗（正常情況）:', error)
+    // 檢查是否需要重新登入
+    if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
+      console.log('首頁：Token 過期，需要重新登入')
+      // 對於首頁，不自動跳轉，讓用戶手動點擊登入
+    }
+    else {
+      console.log('首頁認證檢查失敗（正常情況）:', error)
+    }
   }
   finally {
     isChecking = false

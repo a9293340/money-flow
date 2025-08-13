@@ -15,18 +15,30 @@ export async function authenticatedFetch<T = Record<string, unknown>>(
 ): Promise<T> {
   try {
     // 第一次嘗試請求
-    return await apiFetch<T>(url, options)
+    const result = await apiFetch<T>(url, options)
+
+    // 檢查返回的結果是否表示需要重新登入
+    if (result && typeof result === 'object' && 'requireLogin' in result && result.requireLogin) {
+      console.log('API 返回 requireLogin: true，嘗試刷新 token')
+      throw new Error('AUTH_REQUIRED')
+    }
+
+    return result
   }
   catch (error) {
     console.log('API 請求失敗，檢查是否需要刷新 token:', error)
 
-    // 檢查是否是認證錯誤（401 或包含認證相關的錯誤訊息）
+    // 檢查是否是認證錯誤
+    const errorString = String(error)
     const isAuthError = error instanceof Error && (
-      error.message.includes('401')
+      error.message === 'AUTH_REQUIRED'
+      || error.message.includes('401')
       || error.message.includes('HTTP error! status: 401')
       || error.message.toLowerCase().includes('unauthorized')
       || error.message.includes('token')
       || error.message.includes('過期')
+      || errorString.includes('401')
+      || errorString.includes('unauthorized')
     )
 
     if (isAuthError) {
@@ -41,8 +53,15 @@ export async function authenticatedFetch<T = Record<string, unknown>>(
           const refreshToken = localStorage.getItem('refresh_token')
           if (refreshToken) {
             refreshOptions.headers = {
+              'X-Client-Platform': platform, // 確保平台資訊傳遞
               'X-Refresh-Token': refreshToken,
             }
+          }
+        }
+        else {
+          // Web 端也要添加平台標識
+          refreshOptions.headers = {
+            'X-Client-Platform': platform,
           }
         }
 
