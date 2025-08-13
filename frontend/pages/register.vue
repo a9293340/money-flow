@@ -503,7 +503,7 @@
 </template>
 
 <script setup lang="ts">
-import { apiFetch, getTokenConfig } from '~/lib/utils/client'
+import { apiFetch, getTokenConfig, getApiUrl } from '~/lib/utils/client'
 
 // 頁面設定
 definePageMeta({
@@ -595,7 +595,7 @@ async function handleRegister() {
   clearErrors()
 
   try {
-    const { public: { apiUrl } } = useRuntimeConfig()
+    const apiUrl = getApiUrl()
     const registerUrl = `${apiUrl}/register`
 
     const response = await apiFetch<{

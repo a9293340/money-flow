@@ -628,7 +628,7 @@
 </template>
 
 <script setup lang="ts">
-import { getTokenConfig } from '~/lib/utils/client'
+import { getTokenConfig, getApiUrl } from '~/lib/utils/client'
 
 // 頁面設定
 definePageMeta({
@@ -639,9 +639,8 @@ definePageMeta({
 // 檢查用戶是否已登入，如果是則導向 dashboard
 onMounted(async () => {
   try {
-    const { public: { apiUrl } } = useRuntimeConfig()
+    const apiUrl = getApiUrl()
     const authMeUrl = `${apiUrl}/auth/me`
-
     const response = await $fetch(authMeUrl, {
       credentials: 'include',
     }) as {

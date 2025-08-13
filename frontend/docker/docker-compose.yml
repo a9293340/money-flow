@@ -22,7 +22,6 @@ services:
       - APP_NAME=${APP_NAME:-Personal Finance Manager}
       - APP_URL=${APP_URL:-http://localhost:3000}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - PRODUCTION_DOMAIN=${PRODUCTION_DOMAIN:-personal-finance-manager-266039927960.asia-east1.run.app}
       # JWT settings  
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       - PASSWORD_RESET_EXPIRES=${PASSWORD_RESET_EXPIRES:-1h}

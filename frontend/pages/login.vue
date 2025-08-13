@@ -394,7 +394,7 @@
 </template>
 
 <script setup lang="ts">
-import { apiFetch, getTokenConfig } from '~/lib/utils/client'
+import { apiFetch, getTokenConfig, getApiUrl } from '~/lib/utils/client'
 
 // 頁面設定
 definePageMeta({
@@ -462,7 +462,7 @@ async function handleLogin() {
   clearErrors()
 
   try {
-    const { public: { apiUrl } } = useRuntimeConfig()
+    const apiUrl = getApiUrl()
     const loginUrl = `${apiUrl}/login`
 
     const response = await apiFetch<{

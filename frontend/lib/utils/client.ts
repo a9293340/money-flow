@@ -313,3 +313,27 @@ export function getTokenConfig(platform?: ClientPlatform) {
     description: 'Web 端 - 較短的 token 有效期，安全性優先',
   }
 }
+
+/**
+ * 動態取得 API URL (瀏覽器端使用)
+ * 根據當前環境自動判斷正確的 API URL
+ */
+export function getApiUrl(): string {
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname, port } = window.location
+
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      // 開發環境
+      return `${protocol}//${hostname}:${port || '3000'}/api`
+    }
+
+    if (hostname.includes('tauri')) {
+      return 'https://personal-finance-manager-266039927960.asia-east1.run.app/api'
+    }
+
+    // Web 生產環境：使用當前 origin
+    return `${window.location.origin}/api`
+  }
+
+  return 'http://localhost:3000/api'
+}

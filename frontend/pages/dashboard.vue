@@ -594,7 +594,7 @@
 </template>
 
 <script setup lang="ts">
-import { apiFetch, getTokenConfig } from '~/lib/utils/client'
+import { apiFetch, getTokenConfig, getApiUrl } from '~/lib/utils/client'
 import { authenticatedFetch, checkAuthStatus, handleRequireLogin } from '~/lib/utils/auth'
 
 // 頁面設定
@@ -658,7 +658,7 @@ async function loadUserInfo() {
 async function handleLogout() {
   loading.value = true
   try {
-    const { public: { apiUrl } } = useRuntimeConfig()
+    const apiUrl = getApiUrl()
     const logoutUrl = `${apiUrl}/logout`
 
     await apiFetch(logoutUrl, { method: 'POST' })
@@ -678,7 +678,7 @@ async function handleLogout() {
 async function testAuthMe() {
   testing.value = true
   try {
-    const { public: { apiUrl } } = useRuntimeConfig()
+    const apiUrl = getApiUrl()
     const authMeUrl = `${apiUrl}/auth/me`
 
     const response = await authenticatedFetch<Record<string, unknown>>(authMeUrl)
@@ -701,7 +701,7 @@ async function testAuthMe() {
 async function testRefreshToken() {
   testing.value = true
   try {
-    const { public: { apiUrl } } = useRuntimeConfig()
+    const apiUrl = getApiUrl()
     const refreshUrl = `${apiUrl}/auth/refresh`
 
     const response = await apiFetch<Record<string, unknown>>(refreshUrl, { method: 'POST' })
