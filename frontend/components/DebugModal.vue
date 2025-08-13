@@ -241,7 +241,7 @@ const debugInfo = computed(() => {
   let windowKeys: string[] = []
 
   if (typeof window !== 'undefined') {
-    const w = window as Record<string, unknown>
+    const w = window as unknown as Record<string, unknown>
     hasTauri = !!(w.__TAURI__)
     hasInvoke = !!(w.__TAURI_INVOKE__)
     windowKeys = Object.keys(window).filter(key =>
