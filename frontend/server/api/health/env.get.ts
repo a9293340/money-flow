@@ -5,15 +5,13 @@
 
 export default defineEventHandler(async (event) => {
   try {
-    const config = useRuntimeConfig()
-
     // 檢查重要環境變數
     const envChecks = {
       NODE_ENV: !!process.env.NODE_ENV,
       NUXT_HOST: !!process.env.NUXT_HOST,
       NUXT_PORT: !!process.env.NUXT_PORT,
-      MONGODB_URI: !!config.mongodbUri,
-      JWT_SECRET: !!config.jwtSecret,
+      MONGODB_URI: !!process.env.MONGODB_URI,
+      JWT_SECRET: !!process.env.JWT_SECRET,
     }
 
     const allHealthy = Object.values(envChecks).every(check => check === true)

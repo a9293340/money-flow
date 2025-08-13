@@ -595,6 +595,9 @@ async function handleRegister() {
   clearErrors()
 
   try {
+    const { public: { apiUrl } } = useRuntimeConfig()
+    const registerUrl = `${apiUrl}/register`
+
     const response = await apiFetch<{
       success: boolean
       message: string
@@ -606,7 +609,7 @@ async function handleRegister() {
         }
       }
       errors?: string[]
-    }>('/api/register', {
+    }>(registerUrl, {
       method: 'POST',
       body: JSON.stringify({
         name: form.name.trim(),
@@ -620,6 +623,8 @@ async function handleRegister() {
 
       // 註冊成功後自動登入
       try {
+        const loginUrl = `${apiUrl}/login`
+
         const loginResponse = await apiFetch<{
           success: boolean
           message: string
@@ -630,7 +635,7 @@ async function handleRegister() {
               name: string
             }
           }
-        }>('/api/login', {
+        }>(loginUrl, {
           method: 'POST',
           body: JSON.stringify({
             email: form.email,

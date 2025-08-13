@@ -639,7 +639,10 @@ definePageMeta({
 // 檢查用戶是否已登入，如果是則導向 dashboard
 onMounted(async () => {
   try {
-    const response = await $fetch('/api/auth/me', {
+    const { public: { apiUrl } } = useRuntimeConfig()
+    const authMeUrl = `${apiUrl}/auth/me`
+
+    const response = await $fetch(authMeUrl, {
       credentials: 'include',
     }) as {
       success: boolean

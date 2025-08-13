@@ -658,7 +658,10 @@ async function loadUserInfo() {
 async function handleLogout() {
   loading.value = true
   try {
-    await apiFetch('/api/logout', { method: 'POST' })
+    const { public: { apiUrl } } = useRuntimeConfig()
+    const logoutUrl = `${apiUrl}/logout`
+
+    await apiFetch(logoutUrl, { method: 'POST' })
     navigateTo('/login')
   }
   catch (error) {
@@ -675,7 +678,10 @@ async function handleLogout() {
 async function testAuthMe() {
   testing.value = true
   try {
-    const response = await authenticatedFetch<Record<string, unknown>>('/api/auth/me')
+    const { public: { apiUrl } } = useRuntimeConfig()
+    const authMeUrl = `${apiUrl}/auth/me`
+
+    const response = await authenticatedFetch<Record<string, unknown>>(authMeUrl)
     testResult.value = JSON.stringify(response, null, 2)
   }
   catch (error) {
@@ -695,7 +701,10 @@ async function testAuthMe() {
 async function testRefreshToken() {
   testing.value = true
   try {
-    const response = await apiFetch<Record<string, unknown>>('/api/auth/refresh', { method: 'POST' })
+    const { public: { apiUrl } } = useRuntimeConfig()
+    const refreshUrl = `${apiUrl}/auth/refresh`
+
+    const response = await apiFetch<Record<string, unknown>>(refreshUrl, { method: 'POST' })
     testResult.value = JSON.stringify(response, null, 2)
   }
   catch (error) {

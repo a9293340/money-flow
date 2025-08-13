@@ -13,15 +13,16 @@ services:
       - NUXT_HOST=0.0.0.0
       - NUXT_PORT=3000
       # Database
-      - MONGODB_URI=${MONGODB_URI:-mongodb+srv://a9293340:574597@cluster0.rnvhhr4.mongodb.net/personal-finance-manager}
+      - MONGODB_URI=${MONGODB_URI}
       # Security
-      - JWT_SECRET=${JWT_SECRET:-vJL3+1sMvw+CXCIHa02BqDR3Cksd50D9US0dL2ypO0U=}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-0be72826b36cd2d71b3bb5144b7870ff7d90ce4422ed10ceb194d6d9ffc64865}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - BCRYPT_ROUNDS=${BCRYPT_ROUNDS:-12}
       # App settings
       - APP_NAME=${APP_NAME:-Personal Finance Manager}
       - APP_URL=${APP_URL:-http://localhost:3000}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - PRODUCTION_DOMAIN=${PRODUCTION_DOMAIN:-personal-finance-manager-266039927960.asia-east1.run.app}
       # JWT settings  
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
       - PASSWORD_RESET_EXPIRES=${PASSWORD_RESET_EXPIRES:-1h}
