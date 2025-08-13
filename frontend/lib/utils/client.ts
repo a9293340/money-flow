@@ -193,23 +193,16 @@ export function getApiHeaders(): HeadersInit {
  */
 export function createApiRequest(options: RequestInit = {}): RequestInit {
   const defaultHeaders = getApiHeaders()
-  const platform = detectCurrentPlatform()
 
-  const baseConfig: RequestInit = {
+  return {
     ...options,
     headers: {
       ...defaultHeaders,
       ...(options.headers || {}),
     },
+    // 全面停用 credentials，確保與 CORS '*' 相容
+    // credentials: 'omit' 可以明確指定不發送 credentials
   }
-
-  // 只有 web 平台才使用 credentials
-  if (platform === 'web') {
-    baseConfig.credentials = 'include'
-  }
-  // mobile 平台明確不設定 credentials，確保不會觸發 preflight
-
-  return baseConfig
 }
 
 /**
