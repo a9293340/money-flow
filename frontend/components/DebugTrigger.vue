@@ -1,15 +1,12 @@
 <template>
   <div
-    class="fixed top-4 right-4 w-12 h-12 z-40 cursor-pointer bg-red-500 opacity-50 hover:opacity-75 transition-opacity"
+    class="fixed top-4 right-4 w-12 h-12 z-40 cursor-default bg-transparent opacity-0 hover:opacity-5 transition-opacity"
     @click="handleClick"
     @touchstart="handleTouchStart"
     @touchend="handleTouchEnd"
     @touchcancel="handleTouchCancel"
   >
-    <!-- 紅色可見的觸發區域 -->
-    <div class="w-full h-full flex items-center justify-center text-white text-xs font-bold">
-      DEBUG
-    </div>
+    <!-- 完全透明的觸發區域，只有 hover 時稍微可見 -->
   </div>
 
   <!-- Debug Modal -->

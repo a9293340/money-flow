@@ -4,6 +4,7 @@
  */
 
 import { apiFetch, detectCurrentPlatform, saveTokensToStorage, clearTokensFromStorage } from './client'
+import { debugInfo, debugWarn, debugError, debugSuccess } from './mobile-debug'
 
 /**
  * 帶有自動 token 刷新功能的 API 請求函數
@@ -13,25 +14,38 @@ export async function authenticatedFetch<T = Record<string, unknown>>(
   url: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const platform = detectCurrentPlatform()
+  debugInfo(`🔄 authenticatedFetch 開始`, { platform, url })
+
   try {
     // 第一次嘗試請求
+    debugInfo('📤 第一次嘗試 API 請求...')
     const result = await apiFetch<T>(url, options)
+    debugSuccess('📥 第一次請求結果', result)
 
     // 檢查返回的結果是否表示需要重新登入
     if (result && typeof result === 'object' && 'requireLogin' in result && result.requireLogin) {
-      console.log('API 返回 requireLogin: true，嘗試刷新 token')
+      debugWarn('⚠️ API 返回 requireLogin: true，嘗試刷新 token')
       throw new Error('AUTH_REQUIRED')
     }
 
+    // 檢查是否是空物件（可能是網路或解析問題）
+    if (result && typeof result === 'object' && Object.keys(result).length === 0) {
+      debugWarn('⚠️ API 返回空物件，可能是網路問題')
+      throw new Error('EMPTY_RESPONSE')
+    }
+
+    debugSuccess('✅ 第一次請求成功')
     return result
   }
   catch (error) {
-    console.log('API 請求失敗，檢查是否需要刷新 token:', error)
+    debugError('❌ API 請求失敗，檢查是否需要刷新 token', error)
 
     // 檢查是否是認證錯誤
     const errorString = String(error)
     const isAuthError = error instanceof Error && (
       error.message === 'AUTH_REQUIRED'
+      || error.message === 'EMPTY_RESPONSE'
       || error.message.includes('401')
       || error.message.includes('HTTP error! status: 401')
       || error.message.toLowerCase().includes('unauthorized')

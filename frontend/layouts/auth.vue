@@ -3,11 +3,20 @@
     <!-- 頁面內容（保持原始樣式） -->
     <slot />
 
-    <!-- Debug Trigger (全域隱藏調試觸發器) -->
-    <DebugTrigger />
+    <!-- Debug Modal (只保留模態框，移除右上角觸發器) -->
+    <DebugModal
+      :show="showDebugModal"
+      @close="showDebugModal = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-// 認證頁面布局，包含調試功能但不影響原始樣式
+// 全域調試模態框狀態
+const showDebugModal = ref(false)
+
+// 提供給子組件使用的全域調試觸發函數
+provide('triggerDebugModal', () => {
+  showDebugModal.value = true
+})
 </script>

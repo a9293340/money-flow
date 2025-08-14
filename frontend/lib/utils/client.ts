@@ -5,6 +5,7 @@
 
 import type { H3Event } from 'h3'
 import { getHeader } from 'h3'
+import { debugInfo, debugWarn, debugError, debugSuccess } from './mobile-debug'
 
 // 客戶端平台類型
 export type ClientPlatform = 'web' | 'mobile'
@@ -255,10 +256,20 @@ export function createApiRequest(options: RequestInit = {}): RequestInit {
   // 移動端加入 Authorization header
   if (platform === 'mobile') {
     const accessToken = getAccessTokenFromStorage()
+    debugInfo('🔐 移動端 createApiRequest', {
+      platform,
+      hasAccessToken: !!accessToken,
+      accessTokenLength: accessToken?.length || 0,
+    })
     if (accessToken) {
       headers['Authorization'] = `Bearer ${accessToken}`
     }
+    else {
+      debugWarn('⚠️ 移動端沒有找到 access token')
+    }
   }
+
+  debugInfo('📤 API Request Headers', headers)
 
   return {
     ...options,
@@ -286,6 +297,12 @@ export async function mobileLoginFetch<T = Record<string, unknown>>(
     'X-Client-Platform': platform, // 添加平台標識
   }
 
+  debugInfo(`📤 移動端登入請求`, {
+    url,
+    platform,
+    headers
+  })
+
   const response = await fetch(url, {
     method: 'POST',
     body: formData,
@@ -294,7 +311,16 @@ export async function mobileLoginFetch<T = Record<string, unknown>>(
     // 不使用 credentials
   })
 
-  return response.json()
+  debugInfo(`📥 移動端登入響應`, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: Object.fromEntries(response.headers.entries())
+  })
+
+  const result = await response.json()
+  debugInfo(`📊 移動端登入結果`, result)
+  
+  return result
 }
 
 /**
@@ -307,13 +333,33 @@ export async function apiFetch<T = Record<string, unknown>>(
 ): Promise<T> {
   const platform = detectCurrentPlatform()
 
+  // 構建完整的 URL
+  let fullUrl = url
+  if (url.startsWith('/api/')) {
+    // 如果是相對 API 路徑，需要組合完整 URL
+    if (platform === 'mobile') {
+      // 移動端：移除 url 開頭的 /api/，因為 getApiUrl() 已經包含 /api
+      fullUrl = getApiUrl() + url.substring(4) // 移除 "/api" 部分
+    } else {
+      // Web 端：使用相對路徑即可
+      fullUrl = url
+    }
+  }
+
+  debugInfo(`🔗 URL 處理`, {
+    platform,
+    originalUrl: url,
+    fullUrl,
+    apiUrl: platform === 'mobile' ? getApiUrl() : 'relative'
+  })
+
   // 移動端特殊處理：如果是 POST 且有 body，嘗試用 FormData
   if (platform === 'mobile' && options.method === 'POST' && options.body) {
     try {
       const bodyData = JSON.parse(options.body as string)
       // 如果是登入請求，使用 FormData
       if (bodyData.email && bodyData.password) {
-        return mobileLoginFetch(url, bodyData)
+        return mobileLoginFetch(fullUrl, bodyData)
       }
     }
     catch {
@@ -321,7 +367,19 @@ export async function apiFetch<T = Record<string, unknown>>(
     }
   }
 
-  const response = await fetch(url, createApiRequest(options))
+  const requestOptions = createApiRequest(options)
+  debugInfo(`🌐 發送請求到: ${fullUrl}`, {
+    method: requestOptions.method || 'GET',
+    headers: requestOptions.headers
+  })
+
+  const response = await fetch(fullUrl, requestOptions)
+
+  debugInfo(`📡 收到響應`, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: Object.fromEntries(response.headers.entries())
+  })
 
   // 檢查 Content-Type 是否為 JSON
   const contentType = response.headers.get('content-type')
@@ -333,12 +391,26 @@ export async function apiFetch<T = Record<string, unknown>>(
   // 總是嘗試解析 JSON，不論狀態碼
   try {
     const data = await response.json()
+    
+    debugInfo(`📊 解析的 JSON 數據`, {
+      data,
+      dataType: typeof data,
+      dataKeys: typeof data === 'object' && data !== null ? Object.keys(data) : [],
+      isEmpty: typeof data === 'object' && data !== null && Object.keys(data).length === 0
+    })
 
     // 如果響應不成功但有 JSON 數據，返回數據（讓上層處理錯誤）
     if (!response.ok) {
+      debugError(`❌ HTTP 錯誤 ${response.status}`, {
+        status: response.status,
+        statusText: response.statusText,
+        data
+      })
+      // 重要：對於 HTTP 錯誤狀態碼，仍然返回解析的 JSON 數據
       return data
     }
 
+    debugSuccess(`✅ API 成功 ${response.status}`, data)
     return data
   }
   catch (jsonError) {
@@ -354,6 +426,7 @@ export async function apiFetch<T = Record<string, unknown>>(
       jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError),
     }
 
+    debugError('❌ JSON 解析失敗', errorDetails)
     throw new Error(`JSON parsing failed: ${JSON.stringify(errorDetails, null, 2)}`)
   }
 }

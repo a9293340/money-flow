@@ -31,7 +31,10 @@
         </div>
 
         <!-- Logo -->
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-brand rounded-2xl mb-6 shadow-elevated">
+        <div 
+          class="inline-flex items-center justify-center w-16 h-16 bg-gradient-brand rounded-2xl mb-6 shadow-elevated cursor-pointer select-none transition-transform hover:scale-105"
+          @click="handleLogoClick"
+        >
           <svg
             class="w-8 h-8 text-white"
             fill="none"
@@ -395,6 +398,9 @@
 
 <script setup lang="ts">
 import { apiFetch, getTokenConfig, getApiUrl, saveTokensToStorage, detectCurrentPlatform } from '~/lib/utils/client'
+
+// Logo 點擊調試觸發器
+const { handleLogoClick } = useDebugTrigger()
 
 // 頁面設定
 definePageMeta({
