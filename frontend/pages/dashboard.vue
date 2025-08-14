@@ -507,131 +507,9 @@
               </button>
             </div>
           </div>
-
-          <!-- Debug & API Testing -->
-          <div
-            class="card p-6 animate-slide-up"
-            style="animation-delay: 0.7s"
-          >
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">
-              <svg
-                class="w-5 h-5 inline-block mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                />
-              </svg>
-              調試 & API 測試
-            </h3>
-            <div class="space-y-3">
-              <button
-                class="w-full btn-secondary text-left px-4 py-2"
-                @click="showDebugInfo = !showDebugInfo"
-              >
-                {{ showDebugInfo ? '隱藏' : '顯示' }}調試資訊
-              </button>
-              <button
-                :disabled="testing"
-                class="w-full btn-secondary text-left px-4 py-2 disabled:opacity-50"
-                @click="testAuthMe"
-              >
-                測試使用者資訊
-              </button>
-              <button
-                :disabled="testing"
-                class="w-full btn-secondary text-left px-4 py-2 disabled:opacity-50"
-                @click="testRefreshToken"
-              >
-                測試 Token 刷新
-              </button>
-
-              <div
-                v-if="testResult"
-                class="mt-4 p-3 bg-gray-50 rounded-lg"
-              >
-                <h4 class="font-medium text-gray-900 mb-2 text-sm">
-                  測試結果:
-                </h4>
-                <pre class="text-xs text-gray-600 whitespace-pre-wrap overflow-x-auto">{{ testResult }}</pre>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </main>
-
-    <!-- 調試資訊面板 -->
-    <div
-      v-if="showDebugInfo"
-      class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end"
-      @click="showDebugInfo = false"
-    >
-      <div
-        class="bg-white w-full max-h-96 overflow-y-auto p-4"
-        @click.stop
-      >
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-bold">
-            🐛 調試資訊
-          </h3>
-          <div class="flex items-center space-x-3">
-            <div
-              v-if="countdown > 0"
-              class="text-sm text-red-600 font-bold"
-            >
-              ⏱️ {{ countdown }}秒後跳轉
-            </div>
-            <button
-              class="text-gray-500 hover:text-gray-700 text-xl"
-              @click="showDebugInfo = false"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-        <div class="space-y-2 text-xs font-mono">
-          <div
-            v-for="(message, index) in debugMessages"
-            :key="index"
-            class="border-b border-gray-200 pb-2"
-          >
-            <div class="text-gray-500">
-              {{ formatTime(message.timestamp) }}
-            </div>
-            <div :class="getMessageClass(message.type)">
-              {{ message.message }}
-            </div>
-            <div
-              v-if="message.data"
-              class="text-gray-700 mt-1 whitespace-pre-wrap"
-            >
-              {{ formatData(message.data) }}
-            </div>
-          </div>
-        </div>
-        <div class="mt-4 flex space-x-2">
-          <button
-            class="btn-secondary text-sm px-4 py-2"
-            @click="clearDebugMessages"
-          >
-            清除訊息
-          </button>
-          <button
-            v-if="countdown > 0"
-            class="bg-red-500 text-white text-sm px-4 py-2 rounded hover:bg-red-600"
-            @click="stopCountdown"
-          >
-            停止跳轉
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- 配置資訊彈窗 -->
     <ConfigInfoModal
@@ -643,186 +521,68 @@
 </template>
 
 <script setup lang="ts">
-import { apiFetch, getApiUrl, detectCurrentPlatform } from '~/lib/utils/client'
+import { apiFetch, getApiUrl } from '~/lib/utils/client'
 import { authenticatedFetch, handleRequireLogin } from '~/lib/utils/auth'
-import { debugInfo, debugWarn, debugError, debugSuccess, mobileDebug } from '~/lib/utils/mobile-debug'
 
 // Logo 點擊配置觸發器
 const { handleLogoClick, showConfigModal, closeConfigModal, openDebugFromConfig } = useDebugTrigger()
 
 // 頁面設定
 definePageMeta({
-  layout: false,
+  auth: true,
 })
 
 // 響應式數據
 const user = ref<any>(null)
 const userError = ref('')
 const loading = ref(false)
-const testing = ref(false)
-const testResult = ref('')
-const showDebugInfo = ref(false)
-const debugMessages = ref<Array<{
-  timestamp: Date
-  type: 'info' | 'warn' | 'error' | 'success'
-  message: string
-  data?: any
-}>>([])
-const countdown = ref(0)
-const countdownInterval = ref<NodeJS.Timeout | null>(null)
 
-// 訂閱調試訊息
+// 頁面載入時獲取用戶資料
 onMounted(() => {
-  const unsubscribe = mobileDebug.subscribe((messages) => {
-    debugMessages.value = messages
-  })
-
-  onUnmounted(() => {
-    unsubscribe()
-    if (countdownInterval.value) {
-      clearInterval(countdownInterval.value)
-    }
-  })
+  loadUser()
 })
 
-// 啟動倒數計時
-function startCountdown(seconds: number, callback: () => void) {
-  countdown.value = seconds
-
-  if (countdownInterval.value) {
-    clearInterval(countdownInterval.value)
-  }
-
-  countdownInterval.value = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) {
-      if (countdownInterval.value) {
-        clearInterval(countdownInterval.value)
-      }
-      callback()
-    }
-  }, 1000)
-}
-
-// 格式化日期
-function formatDate(dateString: string | undefined) {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleString('zh-TW')
-}
-
-// 格式化歡迎時間
-function formatWelcomeTime() {
-  const hour = new Date().getHours()
-  if (hour < 12) return '早安'
-  if (hour < 18) return '午安'
-  return '晚安'
-}
-
 // 載入使用者資訊
-async function loadUserInfo() {
-  userError.value = '' // 清除之前的錯誤
+async function loadUser() {
+  if (loading.value) return
+
+  loading.value = true
+  userError.value = ''
 
   try {
-    debugInfo('🏠 Dashboard: 開始載入使用者資訊...')
-
-    // 檢查移動端的 token 狀態
-    const platform = detectCurrentPlatform()
-    if (platform === 'mobile') {
-      const accessToken = localStorage.getItem('access_token')
-      const refreshToken = localStorage.getItem('refresh_token')
-
-      // 解碼 JWT token 來檢查內容（不驗證簽名）
-      let tokenPayload = null
-      if (accessToken) {
-        try {
-          const payloadBase64 = accessToken.split('.')[1]
-          const payload = JSON.parse(atob(payloadBase64))
-          tokenPayload = payload
-        }
-        catch (e) {
-          debugWarn('⚠️ JWT token 解碼失敗', e)
-        }
-      }
-
-      debugInfo('📱 移動端 Token 狀態檢查', {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-        accessTokenLength: accessToken?.length || 0,
-        refreshTokenLength: refreshToken?.length || 0,
-        tokenPayload: tokenPayload
-          ? {
-              userId: tokenPayload.userId,
-              email: tokenPayload.email,
-              exp: new Date(tokenPayload.exp * 1000).toLocaleString(),
-              isExpired: tokenPayload.exp * 1000 < Date.now(),
-            }
-          : null,
-      })
-    }
-
-    // 直接使用 authenticatedFetch，它會自動處理 token 刷新
+    // 使用 authenticatedFetch 進行 API 調用，內建自動刷新功能
     const response = await authenticatedFetch<{
       success: boolean
-      message: string
+      message?: string
       data?: {
-        user: Record<string, unknown>
+        user: any
       }
       requireLogin?: boolean
-      errors?: string[]
     }>('/api/auth/me')
-
-    debugSuccess('✅ Dashboard: 認證檢查結果', response)
 
     if (response.success && response.data?.user) {
       user.value = response.data.user
-      debugSuccess('✅ Dashboard: 使用者資訊載入成功')
     }
     else if (response.requireLogin) {
-      debugError('❌ Dashboard: 需要重新登入')
       userError.value = '需要重新登入'
-
-      // 移動端給予時間查看調試資訊
-      if (platform === 'mobile') {
-        debugWarn('🔍 移動端：10秒後跳轉到登入頁，請查看調試資訊')
-        showDebugInfo.value = true // 自動顯示調試面板
-        startCountdown(10, () => {
-          handleRequireLogin()
-        })
-      }
-      else {
-        handleRequireLogin()
-      }
+      handleRequireLogin()
     }
     else {
-      debugWarn('⚠️ Dashboard: 認證失敗，但不需要重新登入', response.message)
       userError.value = response.message || '載入使用者資訊失敗'
     }
   }
   catch (error) {
-    debugError('❌ Dashboard: 載入使用者資訊錯誤', error)
-
     if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
-      debugError('❌ Dashboard: Token 刷新失敗，需要重新登入')
       userError.value = 'Token 已過期，請重新登入'
-
-      // 移動端給予時間查看調試資訊
-      const currentPlatform = detectCurrentPlatform()
-      if (currentPlatform === 'mobile') {
-        debugWarn('🔍 移動端：10秒後跳轉到登入頁，請查看調試資訊')
-        showDebugInfo.value = true // 自動顯示調試面板
-        startCountdown(10, () => {
-          handleRequireLogin()
-        })
-      }
-      else {
-        handleRequireLogin()
-      }
+      handleRequireLogin()
     }
     else {
-      debugWarn('⚠️ Dashboard: 其他載入錯誤', String(error))
       userError.value = '載入使用者資訊失敗'
       // 對於非認證錯誤，不自動重定向
     }
+  }
+  finally {
+    loading.value = false
   }
 }
 
@@ -846,96 +606,26 @@ async function handleLogout() {
   }
 }
 
-// 測試 /api/auth/me (使用自動刷新功能)
-async function testAuthMe() {
-  testing.value = true
-  try {
-    const apiUrl = getApiUrl()
-    const authMeUrl = `${apiUrl}/auth/me`
-
-    const response = await authenticatedFetch<Record<string, unknown>>(authMeUrl)
-    testResult.value = JSON.stringify(response, null, 2)
-  }
-  catch (error) {
-    if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
-      testResult.value = '需要重新登入'
-    }
-    else {
-      testResult.value = `錯誤: ${error}`
-    }
-  }
-  finally {
-    testing.value = false
-  }
+// 格式化日期
+function formatDate(dateString: string | undefined) {
+  if (!dateString) return 'N/A'
+  return new Date(dateString).toLocaleString('zh-TW')
 }
 
-// 測試 Token 刷新
-async function testRefreshToken() {
-  testing.value = true
-  try {
-    const apiUrl = getApiUrl()
-    const refreshUrl = `${apiUrl}/auth/refresh`
-
-    const response = await apiFetch<Record<string, unknown>>(refreshUrl, { method: 'POST' })
-    testResult.value = JSON.stringify(response, null, 2)
-  }
-  catch (error) {
-    testResult.value = `錯誤: ${error}`
-  }
-  finally {
-    testing.value = false
-  }
+// 格式化歡迎時間
+function formatWelcomeTime() {
+  const hour = new Date().getHours()
+  if (hour < 6) return '深夜好'
+  if (hour < 12) return '早安'
+  if (hour < 18) return '午安'
+  return '晚安'
 }
-
-// 調試面板相關函數
-function formatTime(date: Date) {
-  return date.toLocaleTimeString('zh-TW', {
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-}
-
-function formatData(data: any) {
-  if (typeof data === 'object') {
-    return JSON.stringify(data, null, 2)
-  }
-  return String(data)
-}
-
-function getMessageClass(type: string) {
-  switch (type) {
-    case 'error': return 'text-red-600'
-    case 'warn': return 'text-yellow-600'
-    case 'success': return 'text-green-600'
-    default: return 'text-blue-600'
-  }
-}
-
-function clearDebugMessages() {
-  mobileDebug.clear()
-}
-
-function stopCountdown() {
-  if (countdownInterval.value) {
-    clearInterval(countdownInterval.value)
-    countdownInterval.value = null
-  }
-  countdown.value = 0
-  debugInfo('⏹️ 倒數計時已停止，不會自動跳轉')
-}
-
-// 頁面載入時獲取使用者資訊
-onMounted(() => {
-  loadUserInfo()
-})
 
 // SEO
 useHead({
   title: 'Dashboard - Money Flow',
   meta: [
-    { name: 'description', content: 'Money Flow 個人財務管理系統 Dashboard' },
+    { name: 'description', content: 'Money Flow Dashboard - 個人財務管理中心' },
   ],
 })
 </script>

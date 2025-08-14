@@ -550,7 +550,7 @@ async function handleLogin() {
           response.data.tokens.accessToken,
           response.data.tokens.refreshToken,
         )
-        console.log('移動端 tokens 已儲存到 localStorage')
+        console.log(JSON.stringify({ action: 'mobile_tokens_stored', platform: 'mobile' }))
       }
 
       // 延遲跳轉到 dashboard

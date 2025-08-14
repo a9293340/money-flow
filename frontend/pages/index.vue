@@ -648,7 +648,7 @@ onMounted(async () => {
 
   try {
     const platform = detectCurrentPlatform()
-    console.log(`首頁認證檢查 - 平台: ${platform}`)
+    console.log(JSON.stringify({ page: 'index', action: 'auth_check', platform }))
 
     const response = await authenticatedFetch<{
       success: boolean
@@ -665,25 +665,18 @@ onMounted(async () => {
       error?: string
     }>('/api/auth/me')
 
-    console.log('首頁認證檢查響應:', response)
+    console.log(JSON.stringify({ page: 'index', action: 'auth_response', authenticated: !!response }))
 
     if (response.success && response.data?.user) {
-      console.log('用戶已登入，導向 dashboard')
+      console.log(JSON.stringify({ page: 'index', action: 'redirect_authenticated_user' }))
       // 用戶已登入，導向 dashboard
       await navigateTo('/dashboard', { replace: true })
-    }
-    else {
-      console.log('用戶未登入，繼續顯示首頁')
     }
   }
   catch (error) {
     // 檢查是否需要重新登入
     if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
-      console.log('首頁：Token 過期，需要重新登入')
       // 對於首頁，不自動跳轉，讓用戶手動點擊登入
-    }
-    else {
-      console.log('首頁認證檢查失敗（正常情況）:', error)
     }
   }
   finally {

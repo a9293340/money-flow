@@ -7,8 +7,8 @@
 import { enableDebug } from '~/lib/utils/mobile-debug'
 
 export function useDebugTrigger() {
-  // 注入 layout 提供的觸發函數
-  const triggerDebugModal = inject<() => void>('triggerDebugModal')
+  // 注入 layout 提供的觸發函數（可能為空，如 index.vue 使用 layout: false）
+  const triggerDebugModal = inject<() => void>('triggerDebugModal', () => {})
 
   // 狀態管理
   const showConfigModal = ref(false)
@@ -54,11 +54,6 @@ export function useDebugTrigger() {
     // 顯示配置資訊彈窗
     showConfigModal.value = true
 
-    // 在控制台輸出信息（只在開發環境）
-    if (process.env.NODE_ENV === 'development') {
-      console.log('⚙️ Logo config trigger activated - Config modal opened')
-    }
-
     // 簡單的視覺反饋
     if (typeof window !== 'undefined') {
       const originalTitle = document.title
@@ -86,14 +81,15 @@ export function useDebugTrigger() {
     // 啟用調試模式
     enableDebug()
 
-    // 觸發調試模態框
+    // 觸發調試模態框（如果有 layout 的話）
     if (triggerDebugModal) {
       triggerDebugModal()
     }
-
-    // 在控制台輸出調試信息（只在開發環境）
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 Debug mode enabled from config modal')
+    else {
+      // 沒有 layout 時的替代方案（如 index.vue）
+      if (process.env.NODE_ENV === 'development') {
+        alert('調試模式已啟用')
+      }
     }
   }
 

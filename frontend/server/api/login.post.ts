@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { getHeader, getQuery, readBody, type H3Event } from 'h3'
+import { getHeader, readBody, type H3Event } from 'h3'
 import { connectMongoDB } from '~/lib/mongodb'
 import { User } from '~/lib/models/user'
 import {
@@ -8,7 +8,6 @@ import {
   setAuthCookies,
   generateTokenId,
   detectClientPlatform,
-  type ClientPlatform,
 } from '~/lib/auth/jwt'
 import {
   logApiError,
@@ -154,41 +153,13 @@ export default defineEventHandler(async (event) => {
     await user.save()
 
     // 檢測客戶端平台
-    let platform = detectClientPlatform(event)
-    
-    // 🔧 臨時測試功能：允許透過查詢參數強制設置平台
-    const query = getQuery(event)
-    if (query.testPlatform === 'mobile' || query.testPlatform === 'web') {
-      platform = query.testPlatform as ClientPlatform
-      console.log('🧪 使用測試平台設定:', platform)
-    }
-    
-    // 調試資訊：記錄平台檢測結果
-    const userAgent = getHeader(event, 'user-agent') || ''
-    const clientPlatformHeader = getHeader(event, 'x-client-platform')
-    console.log('🔍 登入平台檢測:', {
-      detectedPlatform: platform,
-      clientPlatformHeader,
-      userAgent: userAgent.substring(0, 100) + '...',
-      tauriKeywords: ['tauri', 'wry', 'money-flow'].filter(keyword => 
-        userAgent.toLowerCase().includes(keyword)
-      )
-    })
+    const platform = detectClientPlatform(event)
 
     // 生成 JWT tokens (使用動態平台設定)
     const tokenPayload = {
       userId: user._id.toString(),
       email: user.email,
     }
-
-    // 調試：檢查使用的 token 配置
-    const jwtModule = await import('~/lib/auth/jwt')
-    const tokenConfig = jwtModule.getTokenConfig(platform)
-    console.log('🔧 生成 Token 時使用的配置:', {
-      platform,
-      accessConfig: tokenConfig.access,
-      refreshConfig: tokenConfig.refresh
-    })
 
     const accessToken = generateAccessToken(tokenPayload, platform)
     const refreshToken = generateRefreshToken(
@@ -198,27 +169,6 @@ export default defineEventHandler(async (event) => {
       },
       platform,
     )
-    
-    // 調試：驗證生成的 token
-    try {
-      const jwt = await import('jsonwebtoken')
-      const accessPayload = jwt.default.decode(accessToken) as any
-      const refreshPayload = jwt.default.decode(refreshToken) as any
-      console.log('🔍 生成的 Token 資訊:', {
-        accessToken: {
-          iat: accessPayload?.iat ? new Date(accessPayload.iat * 1000).toLocaleString() : 'N/A',
-          exp: accessPayload?.exp ? new Date(accessPayload.exp * 1000).toLocaleString() : 'N/A',
-          duration: accessPayload?.exp && accessPayload?.iat ? Math.round((accessPayload.exp - accessPayload.iat) / 60) + '分鐘' : 'N/A'
-        },
-        refreshToken: {
-          iat: refreshPayload?.iat ? new Date(refreshPayload.iat * 1000).toLocaleString() : 'N/A',
-          exp: refreshPayload?.exp ? new Date(refreshPayload.exp * 1000).toLocaleString() : 'N/A',
-          duration: refreshPayload?.exp && refreshPayload?.iat ? Math.round((refreshPayload.exp - refreshPayload.iat) / (60 * 60 * 24)) + '天' : 'N/A'
-        }
-      })
-    } catch (e) {
-      console.log('無法解析 token:', e)
-    }
 
     // 根據平台設定認證方式
     if (platform === 'web') {
