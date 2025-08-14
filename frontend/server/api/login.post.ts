@@ -181,6 +181,15 @@ export default defineEventHandler(async (event) => {
       email: user.email,
     }
 
+    // 調試：檢查使用的 token 配置
+    const jwtModule = await import('~/lib/auth/jwt')
+    const tokenConfig = jwtModule.getTokenConfig(platform)
+    console.log('🔧 生成 Token 時使用的配置:', {
+      platform,
+      accessConfig: tokenConfig.access,
+      refreshConfig: tokenConfig.refresh
+    })
+
     const accessToken = generateAccessToken(tokenPayload, platform)
     const refreshToken = generateRefreshToken(
       {
@@ -189,6 +198,27 @@ export default defineEventHandler(async (event) => {
       },
       platform,
     )
+    
+    // 調試：驗證生成的 token
+    try {
+      const jwt = await import('jsonwebtoken')
+      const accessPayload = jwt.default.decode(accessToken) as any
+      const refreshPayload = jwt.default.decode(refreshToken) as any
+      console.log('🔍 生成的 Token 資訊:', {
+        accessToken: {
+          iat: accessPayload?.iat ? new Date(accessPayload.iat * 1000).toLocaleString() : 'N/A',
+          exp: accessPayload?.exp ? new Date(accessPayload.exp * 1000).toLocaleString() : 'N/A',
+          duration: accessPayload?.exp && accessPayload?.iat ? Math.round((accessPayload.exp - accessPayload.iat) / 60) + '分鐘' : 'N/A'
+        },
+        refreshToken: {
+          iat: refreshPayload?.iat ? new Date(refreshPayload.iat * 1000).toLocaleString() : 'N/A',
+          exp: refreshPayload?.exp ? new Date(refreshPayload.exp * 1000).toLocaleString() : 'N/A',
+          duration: refreshPayload?.exp && refreshPayload?.iat ? Math.round((refreshPayload.exp - refreshPayload.iat) / (60 * 60 * 24)) + '天' : 'N/A'
+        }
+      })
+    } catch (e) {
+      console.log('無法解析 token:', e)
+    }
 
     // 根據平台設定認證方式
     if (platform === 'web') {

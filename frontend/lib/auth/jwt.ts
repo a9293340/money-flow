@@ -29,7 +29,7 @@ export interface RefreshTokenPayload {
 export type ClientPlatform = 'web' | 'mobile'
 
 // Token 配置 - 根據平台動態設定
-const getTokenConfig = (platform: ClientPlatform) => {
+export const getTokenConfig = (platform: ClientPlatform) => {
   if (platform === 'mobile') {
     return {
       access: {
