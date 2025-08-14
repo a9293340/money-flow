@@ -6,7 +6,7 @@
         <div class="flex justify-between items-center h-16">
           <!-- Logo & Brand -->
           <div class="flex items-center space-x-4">
-            <div 
+            <div
               class="inline-flex items-center justify-center w-10 h-10 bg-gradient-brand rounded-xl shadow-card cursor-pointer select-none transition-transform hover:scale-105"
               @click="handleLogoClick"
             >
@@ -610,7 +610,9 @@
         @click.stop
       >
         <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-bold">🐛 調試資訊</h3>
+          <h3 class="text-lg font-bold">
+            🐛 調試資訊
+          </h3>
           <div class="flex items-center space-x-3">
             <div
               v-if="countdown > 0"
@@ -638,7 +640,10 @@
             <div :class="getMessageClass(message.type)">
               {{ message.message }}
             </div>
-            <div v-if="message.data" class="text-gray-700 mt-1 whitespace-pre-wrap">
+            <div
+              v-if="message.data"
+              class="text-gray-700 mt-1 whitespace-pre-wrap"
+            >
               {{ formatData(message.data) }}
             </div>
           </div>
@@ -697,7 +702,7 @@ onMounted(() => {
   const unsubscribe = mobileDebug.subscribe((messages) => {
     debugMessages.value = messages
   })
-  
+
   onUnmounted(() => {
     unsubscribe()
     if (countdownInterval.value) {
@@ -709,11 +714,11 @@ onMounted(() => {
 // 啟動倒數計時
 function startCountdown(seconds: number, callback: () => void) {
   countdown.value = seconds
-  
+
   if (countdownInterval.value) {
     clearInterval(countdownInterval.value)
   }
-  
+
   countdownInterval.value = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
@@ -754,7 +759,7 @@ async function loadUserInfo() {
     if (platform === 'mobile') {
       const accessToken = localStorage.getItem('access_token')
       const refreshToken = localStorage.getItem('refresh_token')
-      
+
       // 解碼 JWT token 來檢查內容（不驗證簽名）
       let tokenPayload = null
       if (accessToken) {
@@ -762,22 +767,25 @@ async function loadUserInfo() {
           const payloadBase64 = accessToken.split('.')[1]
           const payload = JSON.parse(atob(payloadBase64))
           tokenPayload = payload
-        } catch (e) {
+        }
+        catch (e) {
           debugWarn('⚠️ JWT token 解碼失敗', e)
         }
       }
-      
+
       debugInfo('📱 移動端 Token 狀態檢查', {
         hasAccessToken: !!accessToken,
         hasRefreshToken: !!refreshToken,
         accessTokenLength: accessToken?.length || 0,
         refreshTokenLength: refreshToken?.length || 0,
-        tokenPayload: tokenPayload ? {
-          userId: tokenPayload.userId,
-          email: tokenPayload.email,
-          exp: new Date(tokenPayload.exp * 1000).toLocaleString(),
-          isExpired: tokenPayload.exp * 1000 < Date.now()
-        } : null
+        tokenPayload: tokenPayload
+          ? {
+              userId: tokenPayload.userId,
+              email: tokenPayload.email,
+              exp: new Date(tokenPayload.exp * 1000).toLocaleString(),
+              isExpired: tokenPayload.exp * 1000 < Date.now(),
+            }
+          : null,
       })
     }
 
@@ -801,7 +809,7 @@ async function loadUserInfo() {
     else if (response.requireLogin) {
       debugError('❌ Dashboard: 需要重新登入')
       userError.value = '需要重新登入'
-      
+
       // 移動端給予時間查看調試資訊
       if (platform === 'mobile') {
         debugWarn('🔍 移動端：10秒後跳轉到登入頁，請查看調試資訊')
@@ -809,7 +817,8 @@ async function loadUserInfo() {
         startCountdown(10, () => {
           handleRequireLogin()
         })
-      } else {
+      }
+      else {
         handleRequireLogin()
       }
     }
@@ -824,7 +833,7 @@ async function loadUserInfo() {
     if (error instanceof Error && error.message === 'REQUIRE_LOGIN') {
       debugError('❌ Dashboard: Token 刷新失敗，需要重新登入')
       userError.value = 'Token 已過期，請重新登入'
-      
+
       // 移動端給予時間查看調試資訊
       const currentPlatform = detectCurrentPlatform()
       if (currentPlatform === 'mobile') {
@@ -833,7 +842,8 @@ async function loadUserInfo() {
         startCountdown(10, () => {
           handleRequireLogin()
         })
-      } else {
+      }
+      else {
         handleRequireLogin()
       }
     }
@@ -908,11 +918,11 @@ async function testRefreshToken() {
 
 // 調試面板相關函數
 function formatTime(date: Date) {
-  return date.toLocaleTimeString('zh-TW', { 
+  return date.toLocaleTimeString('zh-TW', {
     hour12: false,
-    hour: '2-digit', 
-    minute: '2-digit', 
-    second: '2-digit' 
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   })
 }
 

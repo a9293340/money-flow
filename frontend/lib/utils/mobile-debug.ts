@@ -48,19 +48,19 @@ class MobileDebugger {
       timestamp: new Date(),
       type,
       message,
-      data
+      data,
     }
-    
+
     this.messages.push(newMessage)
-    
+
     // 限制訊息數量
     if (this.messages.length > this.maxMessages) {
       this.messages.shift()
     }
-    
+
     // 通知所有監聽器
     this.listeners.forEach(listener => listener([...this.messages]))
-    
+
     // 在開發環境下同時輸出到 console
     if (process.env.NODE_ENV === 'development') {
       const consoleMethod = type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'log'
@@ -93,7 +93,7 @@ class MobileDebugger {
     this.listeners.push(listener)
     // 立即提供當前訊息
     listener([...this.messages])
-    
+
     // 返回取消訂閱函數
     return () => {
       const index = this.listeners.indexOf(listener)
@@ -127,7 +127,7 @@ export const mobileDebug = new MobileDebugger()
 
 // 便捷的全域函數
 export const debugInfo = (message: string, data?: any) => mobileDebug.info(message, data)
-export const debugWarn = (message: string, data?: any) => mobileDebug.warn(message, data)  
+export const debugWarn = (message: string, data?: any) => mobileDebug.warn(message, data)
 export const debugError = (message: string, data?: any) => mobileDebug.error(message, data)
 export const debugSuccess = (message: string, data?: any) => mobileDebug.success(message, data)
 export const debugAlert = (message: string, data?: any) => mobileDebug.alert(message, data)

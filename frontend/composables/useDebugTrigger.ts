@@ -9,7 +9,7 @@ import { enableDebug, isDebugEnabled } from '~/lib/utils/mobile-debug'
 export function useDebugTrigger() {
   // 注入 layout 提供的觸發函數
   const triggerDebugModal = inject<() => void>('triggerDebugModal')
-  
+
   // 點擊計數和計時器
   let clickCount = 0
   let clickTimer: NodeJS.Timeout | null = null

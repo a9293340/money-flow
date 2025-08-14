@@ -300,7 +300,7 @@ export async function mobileLoginFetch<T = Record<string, unknown>>(
   debugInfo(`📤 移動端登入請求`, {
     url,
     platform,
-    headers
+    headers,
   })
 
   const response = await fetch(url, {
@@ -314,12 +314,12 @@ export async function mobileLoginFetch<T = Record<string, unknown>>(
   debugInfo(`📥 移動端登入響應`, {
     status: response.status,
     statusText: response.statusText,
-    headers: Object.fromEntries(response.headers.entries())
+    headers: Object.fromEntries(response.headers.entries()),
   })
 
   const result = await response.json()
   debugInfo(`📊 移動端登入結果`, result)
-  
+
   return result
 }
 
@@ -340,7 +340,8 @@ export async function apiFetch<T = Record<string, unknown>>(
     if (platform === 'mobile') {
       // 移動端：移除 url 開頭的 /api/，因為 getApiUrl() 已經包含 /api
       fullUrl = getApiUrl() + url.substring(4) // 移除 "/api" 部分
-    } else {
+    }
+    else {
       // Web 端：使用相對路徑即可
       fullUrl = url
     }
@@ -350,7 +351,7 @@ export async function apiFetch<T = Record<string, unknown>>(
     platform,
     originalUrl: url,
     fullUrl,
-    apiUrl: platform === 'mobile' ? getApiUrl() : 'relative'
+    apiUrl: platform === 'mobile' ? getApiUrl() : 'relative',
   })
 
   // 移動端特殊處理：如果是 POST 且有 body，嘗試用 FormData
@@ -370,7 +371,7 @@ export async function apiFetch<T = Record<string, unknown>>(
   const requestOptions = createApiRequest(options)
   debugInfo(`🌐 發送請求到: ${fullUrl}`, {
     method: requestOptions.method || 'GET',
-    headers: requestOptions.headers
+    headers: requestOptions.headers,
   })
 
   const response = await fetch(fullUrl, requestOptions)
@@ -378,7 +379,7 @@ export async function apiFetch<T = Record<string, unknown>>(
   debugInfo(`📡 收到響應`, {
     status: response.status,
     statusText: response.statusText,
-    headers: Object.fromEntries(response.headers.entries())
+    headers: Object.fromEntries(response.headers.entries()),
   })
 
   // 檢查 Content-Type 是否為 JSON
@@ -391,12 +392,12 @@ export async function apiFetch<T = Record<string, unknown>>(
   // 總是嘗試解析 JSON，不論狀態碼
   try {
     const data = await response.json()
-    
+
     debugInfo(`📊 解析的 JSON 數據`, {
       data,
       dataType: typeof data,
       dataKeys: typeof data === 'object' && data !== null ? Object.keys(data) : [],
-      isEmpty: typeof data === 'object' && data !== null && Object.keys(data).length === 0
+      isEmpty: typeof data === 'object' && data !== null && Object.keys(data).length === 0,
     })
 
     // 如果響應不成功但有 JSON 數據，返回數據（讓上層處理錯誤）
@@ -404,7 +405,7 @@ export async function apiFetch<T = Record<string, unknown>>(
       debugError(`❌ HTTP 錯誤 ${response.status}`, {
         status: response.status,
         statusText: response.statusText,
-        data
+        data,
       })
       // 重要：對於 HTTP 錯誤狀態碼，仍然返回解析的 JSON 數據
       return data

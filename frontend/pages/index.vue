@@ -10,7 +10,7 @@
         <div class="text-center animate-fade-in">
           <!-- Logo & Brand -->
           <div class="mb-8">
-            <div 
+            <div
               class="inline-flex items-center justify-center w-20 h-20 bg-gradient-brand rounded-2xl mb-6 shadow-elevated cursor-pointer select-none transition-transform hover:scale-105"
               @click="handleLogoClick"
             >
@@ -632,9 +632,10 @@
 
 <script setup lang="ts">
 // Logo 點擊調試觸發器
-const { handleLogoClick } = useDebugTrigger()
 import { getTokenConfig, detectCurrentPlatform } from '~/lib/utils/client'
 import { authenticatedFetch } from '~/lib/utils/auth'
+
+const { handleLogoClick } = useDebugTrigger()
 
 // 頁面設定
 definePageMeta({
