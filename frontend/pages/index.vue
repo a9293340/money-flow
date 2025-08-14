@@ -81,16 +81,6 @@
               免費開始
             </NuxtLink>
           </div>
-
-          <!-- Platform Detection Info -->
-          <div class="inline-flex items-center px-4 py-2 bg-white/50 backdrop-blur-sm rounded-full border border-primary-200/50 shadow-soft">
-            <div class="flex items-center text-sm text-gray-600">
-              <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2" />
-              當前平台: <span class="font-medium text-primary-800 ml-1">{{ platformInfo.platform }}</span>
-              <span class="mx-2 text-gray-400">•</span>
-              Token 有效期: <span class="font-medium text-primary-800">{{ platformInfo.accessTokenDuration }}分鐘</span>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -627,15 +617,22 @@
         </div>
       </div>
     </section>
+
+    <!-- 配置資訊彈窗 -->
+    <ConfigInfoModal
+      :show="showConfigModal"
+      @close="closeConfigModal"
+      @open-debug="openDebugFromConfig"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 // Logo 點擊調試觸發器
-import { getTokenConfig, detectCurrentPlatform } from '~/lib/utils/client'
+import { detectCurrentPlatform } from '~/lib/utils/client'
 import { authenticatedFetch } from '~/lib/utils/auth'
 
-const { handleLogoClick } = useDebugTrigger()
+const { handleLogoClick, showConfigModal, closeConfigModal, openDebugFromConfig } = useDebugTrigger()
 
 // 頁面設定
 definePageMeta({
@@ -692,13 +689,6 @@ onMounted(async () => {
   finally {
     isChecking = false
   }
-})
-
-// 平台資訊
-const platformInfo = computed(() => {
-  const config = getTokenConfig()
-  console.log('首頁平台資訊:', config)
-  return config
 })
 
 // SEO

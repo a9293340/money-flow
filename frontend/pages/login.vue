@@ -56,12 +56,6 @@
         <p class="text-gray-600 mb-2">
           登入您的 Money Flow 帳戶
         </p>
-
-        <!-- 平台資訊 -->
-        <div class="inline-flex items-center px-3 py-1 bg-white/50 backdrop-blur-sm rounded-full border border-primary-200/50 text-xs text-gray-600 mb-8">
-          <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2" />
-          {{ platformInfo.platform }} 平台 • {{ platformInfo.accessTokenDuration }}分鐘有效期
-        </div>
       </div>
 
       <!-- 已登入用戶切換提示 -->
@@ -417,9 +411,6 @@
         class="text-center text-sm text-gray-500 animate-fade-in"
         style="animation-delay: 0.2s"
       >
-        <p class="mb-2">
-          {{ platformInfo.description }}
-        </p>
         <p class="flex items-center justify-center">
           <svg
             class="w-4 h-4 text-green-500 mr-2"
@@ -436,14 +427,21 @@
         </p>
       </div>
     </div>
+
+    <!-- 配置資訊彈窗 -->
+    <ConfigInfoModal
+      :show="showConfigModal"
+      @close="closeConfigModal"
+      @open-debug="openDebugFromConfig"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { apiFetch, getTokenConfig, getApiUrl, saveTokensToStorage, detectCurrentPlatform } from '~/lib/utils/client'
+import { apiFetch, getApiUrl, saveTokensToStorage, detectCurrentPlatform } from '~/lib/utils/client'
 
-// Logo 點擊調試觸發器
-const { handleLogoClick } = useDebugTrigger()
+// Logo 點擊配置觸發器
+const { handleLogoClick, showConfigModal, closeConfigModal, openDebugFromConfig } = useDebugTrigger()
 
 // 已登入用戶重導向處理
 const {
@@ -476,13 +474,6 @@ const showPassword = ref(false)
 const errors = reactive({
   email: '',
   password: '',
-})
-
-// 平台資訊
-const platformInfo = computed(() => {
-  const config = getTokenConfig()
-  console.log('Current platform config:', config)
-  return config
 })
 
 // 清除錯誤訊息

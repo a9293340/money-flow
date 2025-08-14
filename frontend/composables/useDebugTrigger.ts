@@ -1,14 +1,17 @@
 /**
- * Logo 連續點擊觸發調試模式的 composable
- * 使用方法：在頁面中調用 const { handleLogoClick } = useDebugTrigger()
+ * Logo 連續點擊觸發配置資訊彈窗的 composable
+ * 使用方法：在頁面中調用 const { handleLogoClick, showConfigModal, ... } = useDebugTrigger()
  * 然後在 logo 元素上添加 @click="handleLogoClick"
  */
 
-import { enableDebug, isDebugEnabled } from '~/lib/utils/mobile-debug'
+import { enableDebug } from '~/lib/utils/mobile-debug'
 
 export function useDebugTrigger() {
   // 注入 layout 提供的觸發函數
   const triggerDebugModal = inject<() => void>('triggerDebugModal')
+
+  // 狀態管理
+  const showConfigModal = ref(false)
 
   // 點擊計數和計時器
   let clickCount = 0
@@ -25,9 +28,9 @@ export function useDebugTrigger() {
       clearTimeout(clickTimer)
     }
 
-    // 如果達到5次點擊，觸發調試模式
+    // 如果達到5次點擊，觸發配置資訊彈窗
     if (clickCount >= 5) {
-      triggerDebugMode()
+      triggerConfigModal()
       return
     }
 
@@ -38,15 +41,47 @@ export function useDebugTrigger() {
   }
 
   /**
-   * 觸發調試模式
+   * 觸發配置資訊彈窗
    */
-  function triggerDebugMode() {
+  function triggerConfigModal() {
     // 重置計數器和計時器
     clickCount = 0
     if (clickTimer) {
       clearTimeout(clickTimer)
       clickTimer = null
     }
+
+    // 顯示配置資訊彈窗
+    showConfigModal.value = true
+
+    // 在控制台輸出信息（只在開發環境）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('⚙️ Logo config trigger activated - Config modal opened')
+    }
+
+    // 簡單的視覺反饋
+    if (typeof window !== 'undefined') {
+      const originalTitle = document.title
+      document.title = '⚙️ 配置資訊已開啟'
+      setTimeout(() => {
+        document.title = originalTitle
+      }, 2000)
+    }
+  }
+
+  /**
+   * 關閉配置資訊彈窗
+   */
+  function closeConfigModal() {
+    showConfigModal.value = false
+  }
+
+  /**
+   * 從配置彈窗開啟調試模式
+   */
+  function openDebugFromConfig() {
+    // 關閉配置彈窗
+    showConfigModal.value = false
 
     // 啟用調試模式
     enableDebug()
@@ -58,30 +93,32 @@ export function useDebugTrigger() {
 
     // 在控制台輸出調試信息（只在開發環境）
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 Logo debug trigger activated - Debug mode enabled')
-    }
-
-    // 可選：顯示提示訊息（可以用 toast 或其他方式）
-    if (typeof window !== 'undefined' && isDebugEnabled()) {
-      // 簡單的視覺反饋
-      const originalTitle = document.title
-      document.title = '🔧 調試模式已啟用'
-      setTimeout(() => {
-        document.title = originalTitle
-      }, 2000)
+      console.log('🔧 Debug mode enabled from config modal')
     }
   }
 
   /**
+   * 開發者快速觸發配置彈窗（用於測試時強制觸發）
+   * 使用方式：在 console 中執行 window.triggerConfig()
+   */
+  function forceConfigTrigger() {
+    triggerConfigModal()
+  }
+
+  /**
    * 開發者快速觸發調試模式（用於測試時強制觸發）
-   * 使用方式：在 console 中執行 window.triggerDebug() 或在代碼中直接調用
+   * 使用方式：在 console 中執行 window.triggerDebug()
    */
   function forceDebugTrigger() {
-    triggerDebugMode()
+    enableDebug()
+    if (triggerDebugModal) {
+      triggerDebugModal()
+    }
   }
 
   // 在開發環境下暴露到 window 對象，方便開發者快速觸發
   if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    ;(window as unknown as Record<string, unknown>).triggerConfig = forceConfigTrigger
     ;(window as unknown as Record<string, unknown>).triggerDebug = forceDebugTrigger
   }
 
@@ -93,7 +130,14 @@ export function useDebugTrigger() {
   })
 
   return {
+    // 狀態
+    showConfigModal: readonly(showConfigModal),
+
+    // 方法
     handleLogoClick,
+    closeConfigModal,
+    openDebugFromConfig,
+    forceConfigTrigger,
     forceDebugTrigger,
   }
 }

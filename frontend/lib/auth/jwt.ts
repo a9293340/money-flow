@@ -33,7 +33,7 @@ const getTokenConfig = (platform: ClientPlatform) => {
   if (platform === 'mobile') {
     return {
       access: {
-        expiresIn: '1h' as const,
+        expiresIn: '60m' as const, // 修正：60分鐘而非1小時表示法
         cookieName: 'access_token',
         maxAge: 60 * 60 * 1000, // 1 小時
       },

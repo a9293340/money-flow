@@ -54,9 +54,9 @@
             平台資訊
           </h4>
           <div class="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
-            <div><strong>檢測平台:</strong> <span class="font-mono">{{ debugInfo.platform.detected }}</span></div>
-            <div><strong>Token 有效期:</strong> {{ debugInfo.platform.accessTokenDuration }} 分鐘</div>
-            <div><strong>描述:</strong> {{ debugInfo.platform.description }}</div>
+            <div><strong>檢測平台:</strong> <span class="font-mono">{{ platformConfig.platform }}</span></div>
+            <div><strong>Token 有效期:</strong> {{ platformConfig.accessTokenDuration }} 分鐘</div>
+            <div><strong>描述:</strong> {{ platformConfig.description }}</div>
           </div>
         </div>
 
@@ -113,6 +113,42 @@
             <div><strong>Protocol:</strong> <span class="font-mono">{{ debugInfo.environment.protocol }}</span></div>
             <div><strong>Hostname:</strong> <span class="font-mono">{{ debugInfo.environment.hostname }}</span></div>
             <div><strong>API Base URL:</strong> <span class="font-mono text-xs break-all">{{ debugInfo.environment.apiUrl }}</span></div>
+          </div>
+        </div>
+
+        <!-- 平台配置 -->
+        <div class="space-y-3">
+          <h4 class="font-medium text-gray-800 flex items-center">
+            <svg
+              class="w-5 h-5 mr-2 text-primary-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            平台配置
+          </h4>
+          <div class="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+            <div><strong>檢測平台:</strong> <span :class="platformConfig.platform === 'mobile' ? 'text-warning-600' : 'text-primary-600'">{{ platformConfig.platform }}</span></div>
+            <div><strong>Access Token:</strong> <span class="text-gray-700">{{ platformConfig.accessTokenDuration }} 分鐘</span></div>
+            <div><strong>Refresh Token:</strong> <span class="text-gray-700">{{ Math.floor(platformConfig.refreshTokenDuration / (24 * 60)) }} 天</span></div>
+            <div class="pt-2 border-t border-gray-200">
+              <div class="text-xs text-gray-600">
+                {{ platformConfig.description }}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -227,9 +263,11 @@ const emit = defineEmits<{
   close: []
 }>()
 
+// 平台配置資訊
+const platformConfig = getTokenConfig()
+
 // 收集調試資訊
 const debugInfo = computed(() => {
-  const platformConfig = getTokenConfig()
   const now = new Date()
 
   let userAgent = 'N/A'
@@ -302,11 +340,6 @@ const debugInfo = computed(() => {
   }
 
   return {
-    platform: {
-      detected: platformConfig.platform,
-      accessTokenDuration: platformConfig.accessTokenDuration,
-      description: platformConfig.description,
-    },
     token: {
       tokenExists,
       expirationTime,

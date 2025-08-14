@@ -37,10 +37,6 @@
           <!-- User Menu -->
           <div class="flex items-center space-x-4">
             <!-- Platform Info -->
-            <div class="hidden md:flex items-center px-3 py-1 bg-primary-50/50 rounded-full text-xs text-primary-700">
-              <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2" />
-              {{ platformInfo.platform }} 平台
-            </div>
 
             <!-- User Avatar & Name -->
             <div class="flex items-center space-x-3">
@@ -446,35 +442,6 @@
             </div>
           </div>
 
-          <!-- Platform Info Card -->
-          <div
-            class="card p-6 animate-slide-up"
-            style="animation-delay: 0.5s"
-          >
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">
-              平台資訊
-            </h3>
-            <div class="space-y-3">
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-500">當前平台</span>
-                <span class="text-gray-900 font-medium">{{ platformInfo.platform }}</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-500">Token 有效期</span>
-                <span class="text-gray-900">{{ platformInfo.accessTokenDuration }}分鐘</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-500">刷新週期</span>
-                <span class="text-gray-900">{{ Math.floor(platformInfo.refreshTokenDuration / (24 * 60)) }}天</span>
-              </div>
-              <div class="pt-3 border-t border-gray-100">
-                <p class="text-xs text-gray-500">
-                  {{ platformInfo.description }}
-                </p>
-              </div>
-            </div>
-          </div>
-
           <!-- Quick Actions -->
           <div
             class="card p-6 animate-slide-up"
@@ -665,16 +632,23 @@
         </div>
       </div>
     </div>
+
+    <!-- 配置資訊彈窗 -->
+    <ConfigInfoModal
+      :show="showConfigModal"
+      @close="closeConfigModal"
+      @open-debug="openDebugFromConfig"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { apiFetch, getTokenConfig, getApiUrl, detectCurrentPlatform } from '~/lib/utils/client'
+import { apiFetch, getApiUrl, detectCurrentPlatform } from '~/lib/utils/client'
 import { authenticatedFetch, handleRequireLogin } from '~/lib/utils/auth'
 import { debugInfo, debugWarn, debugError, debugSuccess, mobileDebug } from '~/lib/utils/mobile-debug'
 
-// Logo 點擊調試觸發器
-const { handleLogoClick } = useDebugTrigger()
+// Logo 點擊配置觸發器
+const { handleLogoClick, showConfigModal, closeConfigModal, openDebugFromConfig } = useDebugTrigger()
 
 // 頁面設定
 definePageMeta({
@@ -729,9 +703,6 @@ function startCountdown(seconds: number, callback: () => void) {
     }
   }, 1000)
 }
-
-// 平台資訊
-const platformInfo = computed(() => getTokenConfig())
 
 // 格式化日期
 function formatDate(dateString: string | undefined) {
