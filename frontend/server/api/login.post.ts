@@ -8,6 +8,7 @@ import {
   setAuthCookies,
   generateTokenId,
   detectClientPlatform,
+  type ClientPlatform,
 } from '~/lib/auth/jwt'
 import {
   logApiError,
