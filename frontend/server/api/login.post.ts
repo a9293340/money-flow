@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { getHeader, type H3Event } from 'h3'
+import { getHeader, getQuery, readBody, type H3Event } from 'h3'
 import { connectMongoDB } from '~/lib/mongodb'
 import { User } from '~/lib/models/user'
 import {
@@ -153,7 +153,26 @@ export default defineEventHandler(async (event) => {
     await user.save()
 
     // 檢測客戶端平台
-    const platform = detectClientPlatform(event)
+    let platform = detectClientPlatform(event)
+    
+    // 🔧 臨時測試功能：允許透過查詢參數強制設置平台
+    const query = getQuery(event)
+    if (query.testPlatform === 'mobile' || query.testPlatform === 'web') {
+      platform = query.testPlatform as ClientPlatform
+      console.log('🧪 使用測試平台設定:', platform)
+    }
+    
+    // 調試資訊：記錄平台檢測結果
+    const userAgent = getHeader(event, 'user-agent') || ''
+    const clientPlatformHeader = getHeader(event, 'x-client-platform')
+    console.log('🔍 登入平台檢測:', {
+      detectedPlatform: platform,
+      clientPlatformHeader,
+      userAgent: userAgent.substring(0, 100) + '...',
+      tauriKeywords: ['tauri', 'wry', 'money-flow'].filter(keyword => 
+        userAgent.toLowerCase().includes(keyword)
+      )
+    })
 
     // 生成 JWT tokens (使用動態平台設定)
     const tokenPayload = {
