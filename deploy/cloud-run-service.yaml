@@ -94,6 +94,30 @@ spec:
             - name: GOOGLE_CLOUD_PROJECT_ID
               value: 'money-flow-468508'
 
+            # SMTP 郵件服務設定 (非機密配置)
+            - name: SMTP_HOST
+              value: 'smtp.gmail.com'
+            - name: SMTP_PORT
+              value: '587'
+            - name: SMTP_SECURE
+              value: 'false'
+
+            # SMTP 認證資訊 (從 Secret Manager 讀取)
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: smtp-user
+                  key: latest
+            - name: SMTP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: smtp-pass
+                  key: latest
+
+            # 應用程式名稱 (用於郵件標題)
+            - name: APP_NAME
+              value: 'Money Flow'
+
           # 資源限制
           resources:
             limits:
