@@ -15,6 +15,8 @@ export interface ApiLogContext {
   duration?: number
   statusCode?: number
   error?: unknown
+  tokenHash?: string
+  validationErrors?: string[]
 }
 
 /**
