@@ -1,6 +1,8 @@
 import { z } from 'zod'
+import { readBody } from 'h3'
 import { connectMongoDB } from '~/lib/mongodb'
 import { User } from '~/lib/models/user'
+import { sendEmailVerification } from '~/lib/utils/email'
 
 // 註冊驗證 Schema
 const registerSchema = z.object({
@@ -67,10 +69,36 @@ export default defineEventHandler(async (event) => {
     // 儲存到資料庫
     const savedUser = await newUser.save()
 
+    // 生成郵件驗證 token
+    const verificationToken = await savedUser.generateEmailVerificationToken()
+
+    // 儲存 token 到資料庫
+    await savedUser.save()
+
+    // 構建驗證連結
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? `https://${process.env.PRODUCTION_DOMAIN}`
+      : 'http://localhost:3000'
+    const verificationUrl = `${baseUrl}/verify-email?email=${encodeURIComponent(savedUser.email)}&token=${verificationToken}`
+
+    // 發送驗證郵件
+    const emailSent = await sendEmailVerification({
+      to: savedUser.email,
+      name: savedUser.profile.name,
+      verificationToken,
+      verificationUrl,
+    })
+
+    if (!emailSent) {
+      console.warn(`⚠️ 註冊成功但驗證郵件發送失敗: ${savedUser.email}`)
+    }
+
     // 返回成功結果（不包含敏感資訊）
     return {
       success: true,
-      message: '註冊成功',
+      message: emailSent
+        ? '註冊成功！請檢查您的電子郵件並點擊驗證連結以啟用帳戶。'
+        : '註冊成功！但驗證郵件發送失敗，請稍後嘗試重新發送。',
       data: {
         user: {
           id: savedUser._id,
@@ -78,6 +106,7 @@ export default defineEventHandler(async (event) => {
           name: savedUser.profile.name,
           emailVerified: savedUser.security.emailVerified,
         },
+        emailSent,
       },
     }
   }

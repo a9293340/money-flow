@@ -146,6 +146,25 @@ export default defineEventHandler(async (event) => {
       await user.resetLoginAttempts()
     }
 
+    // 檢查電子郵件是否已驗證
+    if (!user.security.emailVerified) {
+      logSecurityEvent('登入嘗試失敗 - 電子郵件未驗證', {
+        ...logContext,
+        email: email.toLowerCase(),
+        userId: user._id.toString(),
+      })
+
+      return {
+        success: false,
+        message: '請先驗證您的電子郵件地址才能登入',
+        errors: ['電子郵件未驗證'],
+        code: 'EMAIL_NOT_VERIFIED', // 前端可以根據此代碼顯示重發驗證郵件選項
+        data: {
+          email: user.email,
+        },
+      }
+    }
+
     // 更新最後登入時間和 IP
     const clientIP = getClientIP(event)
     user.security.lastLoginAt = new Date()

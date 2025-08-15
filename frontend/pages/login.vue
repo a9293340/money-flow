@@ -328,6 +328,91 @@
             </div>
           </div>
 
+          <!-- 郵件驗證提醒 -->
+          <div
+            v-if="showEmailVerificationNeeded"
+            class="bg-amber-50 border border-amber-200 rounded-lg p-4 animate-fade-in"
+          >
+            <div class="flex items-start">
+              <svg
+                class="w-5 h-5 text-amber-400 mt-0.5 mr-3 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+              <div class="flex-1">
+                <h3 class="text-sm font-medium text-amber-800 mb-2">
+                  需要驗證電子郵件
+                </h3>
+                <p class="text-sm text-amber-700 mb-3">
+                  請先驗證您的電子郵件地址 <strong>{{ unverifiedEmail }}</strong> 才能登入。
+                </p>
+
+                <!-- 重發驗證郵件按鈕 -->
+                <button
+                  type="button"
+                  :disabled="resendLoading"
+                  class="inline-flex items-center px-3 py-2 border border-amber-300 shadow-sm text-sm leading-4 font-medium rounded-md text-amber-700 bg-amber-50 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  @click="handleResendVerification"
+                >
+                  <svg
+                    v-if="resendLoading"
+                    class="animate-spin -ml-1 mr-2 h-4 w-4 text-amber-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    />
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <svg
+                    v-else
+                    class="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 8l7.89 7.89a2 2 0 002.83 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                  {{ resendLoading ? '發送中...' : '重新發送驗證郵件' }}
+                </button>
+
+                <!-- 重發結果訊息 -->
+                <div
+                  v-if="resendMessage"
+                  class="mt-3 p-3 rounded-md"
+                  :class="resendSuccess ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'"
+                >
+                  <p class="text-sm">
+                    {{ resendMessage }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 登入按鈕 -->
           <button
             type="submit"
@@ -476,11 +561,22 @@ const errors = reactive({
   password: '',
 })
 
+// 郵件驗證相關狀態
+const showEmailVerificationNeeded = ref(false)
+const unverifiedEmail = ref('')
+const resendLoading = ref(false)
+const resendMessage = ref('')
+const resendSuccess = ref(false)
+
 // 清除錯誤訊息
 function clearErrors() {
   error.value = ''
   errors.email = ''
   errors.password = ''
+  showEmailVerificationNeeded.value = false
+  unverifiedEmail.value = ''
+  resendMessage.value = ''
+  resendSuccess.value = false
 }
 
 // 驗證表單
@@ -519,6 +615,7 @@ async function handleLogin() {
     const response = await apiFetch<{
       success: boolean
       message: string
+      code?: string
       data?: {
         user: {
           id: string
@@ -529,6 +626,7 @@ async function handleLogin() {
           accessToken: string
           refreshToken: string
         }
+        email?: string
       }
       errors?: string[]
     }>(loginUrl, {
@@ -559,9 +657,16 @@ async function handleLogin() {
       }, 1000)
     }
     else {
-      error.value = response.message || '登入失敗'
-      if (response.errors) {
-        error.value += ': ' + response.errors.join(', ')
+      // 檢查是否為郵件未驗證錯誤
+      if (response.code === 'EMAIL_NOT_VERIFIED') {
+        showEmailVerificationNeeded.value = true
+        unverifiedEmail.value = response.data?.email || form.email
+      }
+      else {
+        error.value = response.message || '登入失敗'
+        if (response.errors) {
+          error.value += ': ' + response.errors.join(', ')
+        }
       }
     }
   }
@@ -587,6 +692,42 @@ async function handleLogin() {
   }
   finally {
     loading.value = false
+  }
+}
+
+// 重發驗證郵件
+async function handleResendVerification() {
+  if (!unverifiedEmail.value) return
+
+  try {
+    resendLoading.value = true
+    resendMessage.value = ''
+
+    const apiUrl = getApiUrl()
+    const resendUrl = `${apiUrl}/auth/resend-verification`
+
+    const response = await apiFetch<{
+      success: boolean
+      message: string
+      data?: any
+      errors?: string[]
+    }>(resendUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        email: unverifiedEmail.value,
+      }),
+    })
+
+    resendSuccess.value = response.success
+    resendMessage.value = response.message
+  }
+  catch (error: any) {
+    console.error('重發驗證郵件錯誤:', error)
+    resendSuccess.value = false
+    resendMessage.value = '重發驗證郵件失敗，請稍後再試'
+  }
+  finally {
+    resendLoading.value = false
   }
 }
 

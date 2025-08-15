@@ -45,6 +45,7 @@ export interface IUser extends Document {
   // 實例方法
   comparePassword(candidatePassword: string): Promise<boolean>
   generatePasswordResetToken(): Promise<string>
+  generateEmailVerificationToken(): Promise<string>
   isLocked(): boolean
   incLoginAttempts(): Promise<void>
   resetLoginAttempts(): Promise<void>
@@ -200,6 +201,14 @@ userSchema.methods.generatePasswordResetToken = async function (): Promise<strin
   this.security.passwordResetToken = crypto.createHash('sha256').update(token).digest('hex')
   this.security.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000) // 10 分鐘
 
+  return token
+}
+
+// 生成郵件驗證 token
+userSchema.methods.generateEmailVerificationToken = async function (): Promise<string> {
+  const crypto = await import('node:crypto')
+  const token = crypto.randomBytes(32).toString('hex')
+  this.security.emailVerificationToken = crypto.createHash('sha256').update(token).digest('hex')
   return token
 }
 
