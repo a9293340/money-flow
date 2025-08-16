@@ -21,7 +21,7 @@
         <div class="lg:col-span-1">
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">
-              新增記錄
+              {{ isEditing ? '編輯記錄' : '新增記錄' }}
             </h2>
 
             <form
@@ -170,14 +170,26 @@
               </div>
 
               <!-- 提交按鈕 -->
-              <button
-                type="submit"
-                :disabled="isSubmitting"
-                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <span v-if="isSubmitting">新增中...</span>
-                <span v-else>新增記錄</span>
-              </button>
+              <div class="space-y-2">
+                <button
+                  type="submit"
+                  :disabled="isSubmitting"
+                  class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <span v-if="isSubmitting">{{ isEditing ? '更新中...' : '新增中...' }}</span>
+                  <span v-else>{{ isEditing ? '更新記錄' : '新增記錄' }}</span>
+                </button>
+                
+                <!-- 取消編輯按鈕 -->
+                <button
+                  v-if="isEditing"
+                  type="button"
+                  @click="cancelEdit"
+                  class="w-full bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                >
+                  取消編輯
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -480,6 +492,10 @@ const pagination = ref<Pagination>({
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 
+// 編輯模式狀態
+const editingRecord = ref<Record | null>(null)
+const isEditing = computed(() => editingRecord.value !== null)
+
 // 表單數據
 const form = ref({
   type: 'expense' as 'income' | 'expense',
@@ -572,23 +588,31 @@ const handleSubmit = async () => {
       date: new Date(form.value.date).toISOString(),
     }
 
-    await $fetch('/api/records', {
-      method: 'POST',
-      body: payload,
-    })
+    if (isEditing.value && editingRecord.value) {
+      // 編輯模式 - 更新記錄
+      await $fetch(`/api/records/${editingRecord.value._id}`, {
+        method: 'PUT',
+        body: payload,
+      })
+      alert('記錄更新成功！')
+    } else {
+      // 新增模式 - 創建記錄
+      await $fetch('/api/records', {
+        method: 'POST',
+        body: payload,
+      })
+      alert('記錄新增成功！')
+    }
 
     // 重置表單
     resetForm()
 
     // 重新載入記錄
     await fetchRecords()
-
-    // 顯示成功訊息
-    alert('記錄新增成功！')
   }
   catch (error: any) {
-    console.error('新增記錄失敗:', error)
-    alert('新增記錄失敗：' + (error.data?.message || error.message))
+    console.error(isEditing.value ? '更新記錄失敗:' : '新增記錄失敗:', error)
+    alert((isEditing.value ? '更新記錄失敗：' : '新增記錄失敗：') + (error.data?.message || error.message))
   }
   finally {
     isSubmitting.value = false
@@ -605,6 +629,7 @@ const resetForm = () => {
     tags: [],
   }
   tagsInput.value = ''
+  editingRecord.value = null
 }
 
 const removeTag = (tagToRemove: string) => {
@@ -612,8 +637,26 @@ const removeTag = (tagToRemove: string) => {
 }
 
 const editRecord = (record: Record) => {
-  // TODO: 實作編輯功能
-  console.log('編輯記錄:', record)
+  editingRecord.value = record
+  
+  // 填入表單數據
+  form.value = {
+    type: record.type,
+    amount: record.amount.toString(),
+    categoryId: record.categoryId,
+    description: record.description || '',
+    date: new Date(record.date).toISOString().split('T')[0],
+    tags: record.tags ? [...record.tags] : [],
+  }
+  
+  tagsInput.value = ''
+  
+  // 滾動到表單頂部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const cancelEdit = () => {
+  resetForm()
 }
 
 const deleteRecord = async (recordId: string) => {
