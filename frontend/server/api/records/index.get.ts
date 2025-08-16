@@ -12,7 +12,7 @@ import { verifyAndGetUser } from '~/lib/utils/auth-helpers'
 const querySchema = z.object({
   context: z.enum(['personal', 'group']).default('personal'),
   page: z.string().transform(val => Number.parseInt(val, 10)).pipe(z.number().min(1)).default(1),
-  limit: z.string().transform(val => Number.parseInt(val, 10)).pipe(z.number().min(1).max(100)).default(20),
+  limit: z.string().transform(val => Number.parseInt(val, 10)).pipe(z.number().min(1).max(100)).default(10),
   type: z.enum(['income', 'expense']).optional(),
   categoryId: z.string().optional(),
   year: z.string().transform(val => Number.parseInt(val, 10)).pipe(z.number()).optional(),

@@ -277,9 +277,9 @@
                     placeholder="標籤搜尋 (多個用逗號分隔)"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                   >
-                  
+
                   <!-- 標籤建議 -->
-                  <div 
+                  <div
                     v-if="suggestedTags.length > 0"
                     class="mt-2 flex flex-wrap gap-1"
                   >
@@ -380,24 +380,82 @@
                 </div>
               </div>
 
-              <!-- 分頁 -->
+              <!-- 分頁控制 -->
               <div
-                v-if="pagination.pages > 1"
-                class="mt-6 flex justify-center"
+                v-if="pagination.total > 0"
+                class="mt-6 flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0"
               >
-                <div class="flex space-x-2">
+                <!-- 每頁顯示數量選擇器 -->
+                <div class="flex items-center space-x-2">
+                  <span class="text-sm text-gray-700">每頁顯示</span>
+                  <select
+                    v-model="pagination.limit"
+                    class="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                    @change="changePageSize"
+                  >
+                    <option value="5">
+                      5 筆
+                    </option>
+                    <option value="10">
+                      10 筆
+                    </option>
+                    <option value="20">
+                      20 筆
+                    </option>
+                  </select>
+                  <span class="text-sm text-gray-500">
+                    共 {{ pagination.total }} 筆記錄
+                  </span>
+                </div>
+
+                <!-- 分頁按鈕 -->
+                <div
+                  v-if="pagination.pages > 1"
+                  class="flex items-center space-x-2"
+                >
+                  <!-- 上一頁 -->
                   <button
-                    v-for="page in pagination.pages"
-                    :key="page"
+                    :disabled="pagination.page <= 1"
                     :class="[
-                      'px-3 py-1 rounded text-sm',
-                      page === pagination.page
-                        ? 'bg-blue-600 text-white'
+                      'px-3 py-1 rounded text-sm transition-colors',
+                      pagination.page <= 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
                     ]"
-                    @click="changePage(page)"
+                    @click="changePage(pagination.page - 1)"
                   >
-                    {{ page }}
+                    上一頁
+                  </button>
+
+                  <!-- 頁碼按鈕 -->
+                  <div class="flex space-x-1">
+                    <button
+                      v-for="page in visiblePages"
+                      :key="page"
+                      :class="[
+                        'px-3 py-1 rounded text-sm transition-colors',
+                        page === pagination.page
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+                      ]"
+                      @click="changePage(page)"
+                    >
+                      {{ page }}
+                    </button>
+                  </div>
+
+                  <!-- 下一頁 -->
+                  <button
+                    :disabled="pagination.page >= pagination.pages"
+                    :class="[
+                      'px-3 py-1 rounded text-sm transition-colors',
+                      pagination.page >= pagination.pages
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+                    ]"
+                    @click="changePage(pagination.page + 1)"
+                  >
+                    下一頁
                   </button>
                 </div>
               </div>
@@ -539,7 +597,7 @@ const records = ref<Record[]>([])
 const summary = ref<Summary | null>(null)
 const pagination = ref<Pagination>({
   page: 1,
-  limit: 20,
+  limit: 10,
   total: 0,
   pages: 0,
 })
@@ -579,6 +637,36 @@ const filters = ref({
 // 計算屬性
 const filteredCategories = computed(() => {
   return categories.value.filter(category => category.type === form.value.type)
+})
+
+// 計算可見的頁碼（最多顯示5頁）
+const visiblePages = computed(() => {
+  const total = pagination.value.pages
+  const current = pagination.value.page
+  const pages = []
+
+  if (total <= 5) {
+    // 如果總頁數小於等於5，顯示所有頁碼
+    for (let i = 1; i <= total; i++) {
+      pages.push(i)
+    }
+  }
+  else {
+    // 否則顯示當前頁附近的5個頁碼
+    let start = Math.max(1, current - 2)
+    const end = Math.min(total, start + 4)
+
+    // 確保始終顯示5個頁碼（如果可能）
+    if (end - start < 4) {
+      start = Math.max(1, end - 4)
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i)
+    }
+  }
+
+  return pages
 })
 
 // 年份選項 (當前年份的前後5年)
@@ -641,13 +729,13 @@ const fetchSuggestedTags = async () => {
     // 獲取所有記錄的標籤
     const response = await $fetch('/api/records?limit=100') as any
     const allTags = new Set<string>()
-    
+
     response.data.items.forEach((record: any) => {
       if (record.tags && Array.isArray(record.tags)) {
         record.tags.forEach((tag: string) => allTags.add(tag))
       }
     })
-    
+
     // 轉換為陣列並排序
     suggestedTags.value = Array.from(allTags).sort()
   }
@@ -775,7 +863,8 @@ const cancelEdit = () => {
 const addTagToSearch = (tag: string) => {
   if (!filters.value.tags) {
     filters.value.tags = tag
-  } else {
+  }
+  else {
     // 檢查標籤是否已存在
     const existingTags = filters.value.tags.split(',').map(t => t.trim())
     if (!existingTags.includes(tag)) {
@@ -799,7 +888,14 @@ const deleteRecord = async (recordId: string) => {
 }
 
 const changePage = (page: number) => {
+  if (page < 1 || page > pagination.value.pages) return
   pagination.value.page = page
+  fetchRecords()
+}
+
+const changePageSize = () => {
+  // 當改變每頁顯示數量時，重置到第1頁
+  pagination.value.page = 1
   fetchRecords()
 }
 
