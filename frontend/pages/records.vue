@@ -1059,9 +1059,7 @@ const fetchTrends = async () => {
       months: trendPeriod.value.toString(),
     })
 
-    console.log('正在獲取趨勢資料...', params.toString())
     const response = await $fetch(`/api/statistics/trends?${params}`) as any
-    console.log('趨勢資料 API 回應:', response)
     
     trendsData.value = response.data
 
@@ -1081,27 +1079,15 @@ const fetchTrends = async () => {
 }
 
 const renderTrendsChart = async () => {
-  console.log('renderTrendsChart 被調用，檢查條件:', {
-    hasChartRef: !!trendsChartRef.value,
-    hasTrendsData: !!trendsData.value,
-    trendsLength: trendsData.value?.trends?.length || 0,
-    chartRefValue: trendsChartRef.value
-  })
-
   if (!trendsChartRef.value || !trendsData.value || trendsData.value.trends.length === 0) {
-    console.log('renderTrendsChart: 缺少必要條件，延遲 100ms 後重試')
-    
     // 如果 Canvas 元素還沒準備好，等待一下再試
     if (!trendsChartRef.value && trendsData.value && trendsData.value.trends.length > 0) {
       setTimeout(async () => {
-        console.log('延遲重試 renderTrendsChart')
         await renderTrendsChart()
       }, 100)
     }
     return
   }
-
-  console.log('開始渲染趨勢圖', trendsData.value.trends)
 
   // 銷毀現有圖表
   if (trendsChart) {
@@ -1111,7 +1097,6 @@ const renderTrendsChart = async () => {
 
   const ctx = trendsChartRef.value.getContext('2d')
   if (!ctx) {
-    console.error('無法取得 Canvas 2D 上下文')
     return
   }
 
@@ -1252,7 +1237,6 @@ const renderTrendsChart = async () => {
 
   try {
     trendsChart = new Chart(ctx, chartConfig)
-    console.log('圖表創建成功')
   } catch (error) {
     console.error('創建圖表失敗:', error)
   }
