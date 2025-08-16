@@ -547,11 +547,116 @@
         </div>
       </div>
     </div>
+
+    <!-- 月度趨勢圖 -->
+    <div class="max-w-4xl mx-auto px-4 pb-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 sm:mb-0">
+            月度趨勢分析
+          </h3>
+
+          <!-- 趨勢圖控制選項 -->
+          <div class="flex items-center space-x-4">
+            <select
+              v-model="trendPeriod"
+              class="px-3 py-2 border border-gray-300 rounded-md text-sm"
+              @change="fetchTrends"
+            >
+              <option value="12">
+                過去12個月
+              </option>
+              <option value="6">
+                過去6個月
+              </option>
+              <option value="3">
+                過去3個月
+              </option>
+            </select>
+
+            <button
+              :disabled="isTrendsLoading"
+              class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              @click="fetchTrends"
+            >
+              <span v-if="isTrendsLoading">載入中...</span>
+              <span v-else>重新整理</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 趨勢圖載入狀態 -->
+        <div
+          v-if="isTrendsLoading"
+          class="text-center py-8"
+        >
+          <div class="text-gray-500">
+            載入趨勢資料中...
+          </div>
+        </div>
+
+        <!-- 趨勢圖內容 -->
+        <div
+          v-else-if="trendsData?.trends && trendsData.trends.length > 0"
+          class="space-y-6"
+        >
+          <!-- 圖表容器 -->
+          <div class="relative h-80">
+            <canvas
+              ref="trendsChartRef"
+              class="w-full h-full"
+            />
+          </div>
+
+          <!-- 趨勢摘要 -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-green-600">
+                ${{ trendsData.summary.avgIncome.toFixed(2) }}
+              </div>
+              <div class="text-sm text-gray-600">
+                平均月收入
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-red-600">
+                ${{ trendsData.summary.avgExpense.toFixed(2) }}
+              </div>
+              <div class="text-sm text-gray-600">
+                平均月支出
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-blue-600">
+                ${{ trendsData.summary.avgNetAmount.toFixed(2) }}
+              </div>
+              <div class="text-sm text-gray-600">
+                平均月淨額
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 無資料狀態 -->
+        <div
+          v-else
+          class="text-center py-8"
+        >
+          <div class="text-gray-500">
+            暫無趨勢資料
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick, onUnmounted } from 'vue'
+import { Chart, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, type ChartConfiguration } from 'chart.js'
+
+// 註冊 Chart.js 組件
+Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 // 類型定義
 interface Category {
@@ -585,6 +690,26 @@ interface Pagination {
   pages: number
 }
 
+interface MonthlyTrend {
+  year: number
+  month: number
+  monthLabel: string
+  totalIncome: number
+  totalExpense: number
+  netAmount: number
+  recordCount: number
+}
+
+interface TrendsData {
+  trends: MonthlyTrend[]
+  summary: {
+    totalMonths: number
+    avgIncome: number
+    avgExpense: number
+    avgNetAmount: number
+  }
+}
+
 // 頁面標題
 definePageMeta({
   title: '記帳管理',
@@ -604,6 +729,13 @@ const pagination = ref<Pagination>({
 
 const isLoading = ref(false)
 const isSubmitting = ref(false)
+
+// 趨勢圖相關狀態
+const isTrendsLoading = ref(false)
+const trendsData = ref<TrendsData | null>(null)
+const trendPeriod = ref(12)
+const trendsChartRef = ref<HTMLCanvasElement>()
+let trendsChart: Chart | null = null
 
 // 編輯模式狀態
 const editingRecord = ref<Record | null>(null)
@@ -913,10 +1045,143 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('zh-TW')
 }
 
+// 趨勢圖相關方法
+const fetchTrends = async () => {
+  isTrendsLoading.value = true
+  try {
+    const params = new URLSearchParams({
+      months: trendPeriod.value.toString(),
+    })
+
+    const response = await $fetch(`/api/statistics/trends?${params}`) as any
+    trendsData.value = response.data
+
+    // 等待 DOM 更新後繪製圖表
+    await nextTick()
+    await renderTrendsChart()
+  }
+  catch (error) {
+    console.error('獲取趨勢資料失敗:', error)
+    trendsData.value = null
+  }
+  finally {
+    isTrendsLoading.value = false
+  }
+}
+
+const renderTrendsChart = async () => {
+  if (!trendsChartRef.value || !trendsData.value || trendsData.value.trends.length === 0) {
+    return
+  }
+
+  // 銷毀現有圖表
+  if (trendsChart) {
+    trendsChart.destroy()
+    trendsChart = null
+  }
+
+  const ctx = trendsChartRef.value.getContext('2d')
+  if (!ctx) return
+
+  const trends = trendsData.value.trends
+
+  const chartConfig: ChartConfiguration = {
+    type: 'line',
+    data: {
+      labels: trends.map(trend => trend.monthLabel),
+      datasets: [
+        {
+          label: '收入',
+          data: trends.map(trend => trend.totalIncome),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+        },
+        {
+          label: '支出',
+          data: trends.map(trend => trend.totalExpense),
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+        },
+        {
+          label: '淨額',
+          data: trends.map(trend => trend.netAmount),
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: false,
+        },
+        legend: {
+          position: 'top',
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: (context) => {
+              const label = context.dataset.label || ''
+              const value = context.parsed.y
+              return `${label}: $${value.toFixed(2)}`
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          display: true,
+          title: {
+            display: true,
+            text: '月份',
+          },
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: '金額 ($)',
+          },
+          beginAtZero: true,
+        },
+      },
+      interaction: {
+        mode: 'nearest',
+        axis: 'x',
+        intersect: false,
+      },
+    },
+  }
+
+  trendsChart = new Chart(ctx, chartConfig)
+}
+
 // 生命週期
 onMounted(async () => {
   await fetchCategories()
   await fetchSuggestedTags()
   await fetchRecords()
+  await fetchTrends()
+})
+
+onUnmounted(() => {
+  // 清理圖表資源
+  if (trendsChart) {
+    trendsChart.destroy()
+    trendsChart = null
+  }
 })
 </script>
