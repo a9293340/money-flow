@@ -844,6 +844,14 @@ watch([filters], () => {
   fetchRecords()
 }, { deep: true })
 
+// 監聽趨勢數據變化，重新渲染圖表
+watch(() => trendsData.value, async () => {
+  if (trendsData.value && trendsData.value.trends.length > 0) {
+    await nextTick()
+    await renderTrendsChart()
+  }
+}, { deep: true })
+
 // 方法
 const fetchCategories = async () => {
   try {
@@ -1053,10 +1061,15 @@ const fetchTrends = async () => {
       months: trendPeriod.value.toString(),
     })
 
+    console.log('正在獲取趨勢資料...', params.toString())
     const response = await $fetch(`/api/statistics/trends?${params}`) as any
+    console.log('趨勢資料 API 回應:', response)
+    
     trendsData.value = response.data
 
     // 等待 DOM 更新後繪製圖表
+    await nextTick()
+    // 再等一個 tick 確保 Canvas 元素完全渲染
     await nextTick()
     await renderTrendsChart()
   }
@@ -1071,8 +1084,15 @@ const fetchTrends = async () => {
 
 const renderTrendsChart = async () => {
   if (!trendsChartRef.value || !trendsData.value || trendsData.value.trends.length === 0) {
+    console.log('renderTrendsChart: 缺少必要條件', {
+      hasChartRef: !!trendsChartRef.value,
+      hasTrendsData: !!trendsData.value,
+      trendsLength: trendsData.value?.trends?.length || 0
+    })
     return
   }
+
+  console.log('開始渲染趨勢圖', trendsData.value.trends)
 
   // 銷毀現有圖表
   if (trendsChart) {
@@ -1081,9 +1101,21 @@ const renderTrendsChart = async () => {
   }
 
   const ctx = trendsChartRef.value.getContext('2d')
-  if (!ctx) return
+  if (!ctx) {
+    console.error('無法取得 Canvas 2D 上下文')
+    return
+  }
 
   const trends = trendsData.value.trends
+
+  // 計算 Y 軸的最大值，確保圖表有合理的範圍
+  const allValues = [
+    ...trends.map(t => t.totalIncome),
+    ...trends.map(t => t.totalExpense),
+    ...trends.map(t => Math.abs(t.netAmount))
+  ]
+  const maxValue = Math.max(...allValues)
+  const suggestedMax = maxValue > 0 ? maxValue * 1.1 : 1000
 
   const chartConfig: ChartConfiguration = {
     type: 'line',
@@ -1095,27 +1127,33 @@ const renderTrendsChart = async () => {
           data: trends.map(trend => trend.totalIncome),
           borderColor: '#10b981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          borderWidth: 2,
+          borderWidth: 3,
           fill: false,
           tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
         },
         {
           label: '支出',
           data: trends.map(trend => trend.totalExpense),
           borderColor: '#ef4444',
           backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          borderWidth: 2,
+          borderWidth: 3,
           fill: false,
           tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
         },
         {
           label: '淨額',
           data: trends.map(trend => trend.netAmount),
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          borderWidth: 2,
+          borderWidth: 3,
           fill: false,
           tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
         },
       ],
     },
@@ -1128,10 +1166,19 @@ const renderTrendsChart = async () => {
         },
         legend: {
           position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 20,
+          },
         },
         tooltip: {
           mode: 'index',
           intersect: false,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: '#ddd',
+          borderWidth: 1,
           callbacks: {
             label: (context) => {
               const label = context.dataset.label || ''
@@ -1144,18 +1191,40 @@ const renderTrendsChart = async () => {
       scales: {
         x: {
           display: true,
+          grid: {
+            display: true,
+            color: 'rgba(0, 0, 0, 0.1)',
+          },
           title: {
             display: true,
             text: '月份',
+            font: {
+              size: 14,
+              weight: 'bold',
+            },
           },
         },
         y: {
           display: true,
+          beginAtZero: true,
+          suggestedMax,
+          grid: {
+            display: true,
+            color: 'rgba(0, 0, 0, 0.1)',
+          },
           title: {
             display: true,
             text: '金額 ($)',
+            font: {
+              size: 14,
+              weight: 'bold',
+            },
           },
-          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return '$' + Number(value).toFixed(0)
+            },
+          },
         },
       },
       interaction: {
@@ -1163,10 +1232,21 @@ const renderTrendsChart = async () => {
         axis: 'x',
         intersect: false,
       },
+      elements: {
+        point: {
+          hoverBackgroundColor: '#fff',
+          hoverBorderWidth: 2,
+        },
+      },
     },
   }
 
-  trendsChart = new Chart(ctx, chartConfig)
+  try {
+    trendsChart = new Chart(ctx, chartConfig)
+    console.log('圖表創建成功')
+  } catch (error) {
+    console.error('創建圖表失敗:', error)
+  }
 }
 
 // 生命週期
