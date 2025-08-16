@@ -524,7 +524,7 @@ watch([filters], () => {
 // 方法
 const fetchCategories = async () => {
   try {
-    const { data } = await $fetch('/api/categories')
+    const { data } = await $fetch('/api/categories') as any
     categories.value = data.items
   }
   catch (error) {
@@ -544,7 +544,7 @@ const fetchRecords = async () => {
     if (filters.value.categoryId) params.append('categoryId', filters.value.categoryId)
     if (filters.value.search) params.append('search', filters.value.search)
 
-    const response = await $fetch(`/api/records?${params}`)
+    const response = await $fetch(`/api/records?${params}`) as any
     records.value = response.data.items
     pagination.value = response.data.pagination
     summary.value = response.data.summary

@@ -534,7 +534,7 @@ const fetchCategories = async () => {
     if (filters.value.scope) params.append('scope', filters.value.scope)
     if (filters.value.search) params.append('search', filters.value.search)
 
-    const response = await $fetch(`/api/categories?${params}`)
+    const response = await $fetch(`/api/categories?${params}`) as any
     categories.value = response.data.items
     summary.value = response.data.summary
   }
