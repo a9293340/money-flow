@@ -86,13 +86,38 @@
 
       <!-- 分類列表 -->
       <div class="bg-white rounded-lg shadow-sm border">
-        <!-- 標題列 -->
-        <div class="px-6 py-4 border-b border-gray-200">
+        <!-- 可收合的標題列 -->
+        <div
+          class="px-6 py-4 border-b border-gray-200 cursor-pointer lg:cursor-default"
+          @click="toggleListCollapse"
+        >
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-medium text-gray-900">
-              分類列表
-              <span class="text-sm text-gray-500">({{ summary.totalCount }} 個分類)</span>
-            </h3>
+            <div class="flex items-center space-x-4">
+              <h3 class="text-lg font-medium text-gray-900">
+                分類列表
+                <span class="text-sm text-gray-500">({{ summary.totalCount }} 個分類)</span>
+              </h3>
+              
+              <button
+                class="lg:hidden text-gray-500 hover:text-gray-700 transition-colors"
+                @click.stop="toggleListCollapse"
+              >
+                <svg
+                  class="w-5 h-5 transform transition-transform"
+                  :class="{ 'rotate-180': !isListCollapsed }"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </div>
 
             <!-- 統計資訊 -->
             <div class="flex items-center space-x-4 text-sm text-gray-500">
@@ -102,11 +127,16 @@
           </div>
         </div>
 
-        <!-- 載入狀態 -->
+        <!-- 可收合的列表內容 -->
         <div
-          v-if="isLoading"
-          class="p-8 text-center"
+          class="overflow-hidden transition-all duration-300"
+          :class="isListCollapsed ? 'max-h-0 lg:max-h-none' : 'max-h-screen'"
         >
+          <!-- 載入狀態 -->
+          <div
+            v-if="isLoading"
+            class="p-8 text-center"
+          >
           <div class="text-gray-500">
             載入中...
           </div>
@@ -261,6 +291,7 @@
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -482,6 +513,9 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const editingCategory = ref<Category | null>(null)
 
+// 收合狀態
+const isListCollapsed = ref(false)
+
 // 篩選條件
 const filters = ref({
   type: '',
@@ -635,6 +669,11 @@ const resetForm = () => {
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('zh-TW')
+}
+
+// 收合功能方法
+const toggleListCollapse = () => {
+  isListCollapsed.value = !isListCollapsed.value
 }
 
 // 生命週期

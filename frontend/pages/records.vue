@@ -19,15 +19,45 @@
       <div class="grid gap-6 lg:grid-cols-3">
         <!-- 新增記錄表單 -->
         <div class="lg:col-span-1">
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">
-              {{ isEditing ? '編輯記錄' : '新增記錄' }}
-            </h2>
-
-            <form
-              class="space-y-4"
-              @submit.prevent="handleSubmit"
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <!-- 可收合的標題 -->
+            <div
+              class="flex items-center justify-between p-6 cursor-pointer lg:cursor-default"
+              @click="toggleFormCollapse"
             >
+              <h2 class="text-lg font-semibold text-gray-900">
+                {{ isEditing ? '編輯記錄' : '新增記錄' }}
+              </h2>
+              <button
+                class="lg:hidden text-gray-500 hover:text-gray-700 transition-colors"
+                @click.stop="toggleFormCollapse"
+              >
+                <svg
+                  class="w-5 h-5 transform transition-transform"
+                  :class="{ 'rotate-180': !isFormCollapsed }"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <!-- 可收合的表單內容 -->
+            <div
+              class="overflow-hidden transition-all duration-300"
+              :class="isFormCollapsed ? 'max-h-0 lg:max-h-none' : 'max-h-screen'"
+            >
+              <form
+                class="space-y-4 px-6 pb-6"
+                @submit.prevent="handleSubmit"
+              >
               <!-- 類型選擇 -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">類型</label>
@@ -190,15 +220,50 @@
                   取消編輯
                 </button>
               </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
 
         <!-- 記錄列表 -->
         <div class="lg:col-span-2">
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-            <!-- 篩選區域 -->
-            <div class="p-4 border-b border-gray-200">
+            <!-- 可收合的標題 -->
+            <div
+              class="flex items-center justify-between p-4 cursor-pointer lg:cursor-default border-b border-gray-200"
+              @click="toggleListCollapse"
+            >
+              <h2 class="text-lg font-semibold text-gray-900">
+                記錄列表
+              </h2>
+              <button
+                class="lg:hidden text-gray-500 hover:text-gray-700 transition-colors"
+                @click.stop="toggleListCollapse"
+              >
+                <svg
+                  class="w-5 h-5 transform transition-transform"
+                  :class="{ 'rotate-180': !isListCollapsed }"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <!-- 可收合的列表內容 -->
+            <div
+              class="overflow-hidden transition-all duration-300"
+              :class="isListCollapsed ? 'max-h-0 lg:max-h-none' : 'max-h-screen'"
+            >
+              <!-- 篩選區域 -->
+              <div class="p-4 border-b border-gray-200">
               <div class="flex flex-wrap gap-4">
                 <!-- 年份選擇 -->
                 <select
@@ -735,6 +800,10 @@ const trendPeriod = ref(12)
 const trendsChartRef = ref<HTMLCanvasElement>()
 let trendsChart: Chart | null = null
 
+// 收合狀態
+const isFormCollapsed = ref(true) // 在 mobile 上預設收合
+const isListCollapsed = ref(false)
+
 // 編輯模式狀態
 const editingRecord = ref<Record | null>(null)
 const isEditing = computed(() => editingRecord.value !== null)
@@ -1049,6 +1118,15 @@ const getCategoryName = (categoryId: string) => {
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('zh-TW')
+}
+
+// 收合功能方法
+const toggleFormCollapse = () => {
+  isFormCollapsed.value = !isFormCollapsed.value
+}
+
+const toggleListCollapse = () => {
+  isListCollapsed.value = !isListCollapsed.value
 }
 
 // 趨勢圖相關方法
