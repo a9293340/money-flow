@@ -186,6 +186,11 @@
         </div>
       </div>
 
+      <!-- Category Pie Chart Statistics -->
+      <div class="mb-8">
+        <CategoryPieChart />
+      </div>
+
       <!-- Recent Transactions (if needed) -->
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <div class="flex items-center justify-between mb-4">

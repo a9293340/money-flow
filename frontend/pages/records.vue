@@ -560,6 +560,12 @@ const fetchRecords = async () => {
 const handleSubmit = async () => {
   isSubmitting.value = true
   try {
+    // 處理尚未加入的標籤輸入
+    if (tagsInput.value.trim()) {
+      const pendingTags = tagsInput.value.split(',').map(tag => tag.trim()).filter(Boolean)
+      form.value.tags = [...new Set([...form.value.tags, ...pendingTags])]
+    }
+
     const payload = {
       ...form.value,
       amount: Number.parseFloat(form.value.amount),
