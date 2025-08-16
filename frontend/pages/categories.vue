@@ -97,7 +97,7 @@
                 分類列表
                 <span class="text-sm text-gray-500">({{ summary.totalCount }} 個分類)</span>
               </h3>
-              
+
               <button
                 class="lg:hidden text-gray-500 hover:text-gray-700 transition-colors"
                 @click.stop="toggleListCollapse"
@@ -137,161 +137,161 @@
             v-if="isLoading"
             class="p-8 text-center"
           >
-          <div class="text-gray-500">
-            載入中...
+            <div class="text-gray-500">
+              載入中...
+            </div>
           </div>
-        </div>
 
-        <!-- 空狀態 -->
-        <div
-          v-else-if="categories.length === 0"
-          class="p-8 text-center"
-        >
-          <div class="text-gray-500">
-            {{ filters.type || filters.scope || filters.search ? '沒有符合條件的分類' : '目前沒有分類' }}
-          </div>
-          <button
-            v-if="!filters.type && !filters.scope && !filters.search"
-            class="mt-4 text-blue-600 hover:text-blue-800"
-            @click="showCreateModal = true"
+          <!-- 空狀態 -->
+          <div
+            v-else-if="categories.length === 0"
+            class="p-8 text-center"
           >
-            立即建立第一個分類
-          </button>
-        </div>
-
-        <!-- 分類卡片列表 -->
-        <div
-          v-else
-          class="p-6"
-        >
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            <div
-              v-for="category in categories"
-              :key="category._id"
-              class="relative p-4 border-2 border-gray-200 rounded-lg hover:border-gray-300 transition-colors group"
-              :style="{ borderColor: category.color + '40' }"
+            <div class="text-gray-500">
+              {{ filters.type || filters.scope || filters.search ? '沒有符合條件的分類' : '目前沒有分類' }}
+            </div>
+            <button
+              v-if="!filters.type && !filters.scope && !filters.search"
+              class="mt-4 text-blue-600 hover:text-blue-800"
+              @click="showCreateModal = true"
             >
-              <!-- 分類圖示和資訊 -->
-              <div class="flex items-start justify-between mb-3">
-                <div class="flex items-center space-x-3">
-                  <div
-                    class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
-                    :style="{ backgroundColor: category.color + '20' }"
-                  >
-                    {{ category.icon }}
-                  </div>
-                  <div>
-                    <h4 class="font-medium text-gray-900">
-                      {{ category.name }}
-                    </h4>
-                    <div class="flex items-center space-x-2 text-xs text-gray-500 mt-1">
-                      <span
-                        :class="[
-                          'px-2 py-1 rounded-full',
-                          category.type === 'income'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700',
-                        ]"
-                      >
-                        {{ category.type === 'income' ? '收入' : '支出' }}
-                      </span>
-                      <span
-                        :class="[
-                          'px-2 py-1 rounded-full',
-                          category.scope === 'system'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-700',
-                        ]"
-                      >
-                        {{ category.scope === 'system' ? '系統' : '個人' }}
-                      </span>
+              立即建立第一個分類
+            </button>
+          </div>
+
+          <!-- 分類卡片列表 -->
+          <div
+            v-else
+            class="p-6"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div
+                v-for="category in categories"
+                :key="category._id"
+                class="relative p-4 border-2 border-gray-200 rounded-lg hover:border-gray-300 transition-colors group"
+                :style="{ borderColor: category.color + '40' }"
+              >
+                <!-- 分類圖示和資訊 -->
+                <div class="flex items-start justify-between mb-3">
+                  <div class="flex items-center space-x-3">
+                    <div
+                      class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
+                      :style="{ backgroundColor: category.color + '20' }"
+                    >
+                      {{ category.icon }}
+                    </div>
+                    <div>
+                      <h4 class="font-medium text-gray-900">
+                        {{ category.name }}
+                      </h4>
+                      <div class="flex items-center space-x-2 text-xs text-gray-500 mt-1">
+                        <span
+                          :class="[
+                            'px-2 py-1 rounded-full',
+                            category.type === 'income'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700',
+                          ]"
+                        >
+                          {{ category.type === 'income' ? '收入' : '支出' }}
+                        </span>
+                        <span
+                          :class="[
+                            'px-2 py-1 rounded-full',
+                            category.scope === 'system'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-gray-100 text-gray-700',
+                          ]"
+                        >
+                          {{ category.scope === 'system' ? '系統' : '個人' }}
+                        </span>
+                      </div>
                     </div>
                   </div>
+
+                  <!-- 操作按鈕 -->
+                  <div
+                    v-if="category.scope === 'personal'"
+                    class="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1"
+                  >
+                    <button
+                      class="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                      title="編輯分類"
+                      @click="editCategory(category)"
+                    >
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      class="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                      title="刪除分類"
+                      @click="deleteCategory(category)"
+                    >
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
-                <!-- 操作按鈕 -->
+                <!-- 分類描述 -->
+                <p
+                  v-if="category.description"
+                  class="text-sm text-gray-600 mb-3"
+                >
+                  {{ category.description }}
+                </p>
+
+                <!-- 使用統計 -->
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                  <span>使用次數: {{ category.usageCount || 0 }}</span>
+                  <span v-if="category.lastUsedAt">
+                    最後使用: {{ formatDate(category.lastUsedAt) }}
+                  </span>
+                </div>
+
+                <!-- 系統分類標識 -->
                 <div
-                  v-if="category.scope === 'personal'"
-                  class="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1"
+                  v-if="category.scope === 'system'"
+                  class="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center"
+                  title="系統預設分類"
                 >
-                  <button
-                    class="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                    title="編輯分類"
-                    @click="editCategory(category)"
+                  <svg
+                    class="w-3 h-3 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    <svg
-                      class="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                  </button>
-                  <button
-                    class="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                    title="刪除分類"
-                    @click="deleteCategory(category)"
-                  >
-                    <svg
-                      class="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
+                    <path
+                      fill-rule="evenodd"
+                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
                 </div>
-              </div>
-
-              <!-- 分類描述 -->
-              <p
-                v-if="category.description"
-                class="text-sm text-gray-600 mb-3"
-              >
-                {{ category.description }}
-              </p>
-
-              <!-- 使用統計 -->
-              <div class="flex items-center justify-between text-xs text-gray-500">
-                <span>使用次數: {{ category.usageCount || 0 }}</span>
-                <span v-if="category.lastUsedAt">
-                  最後使用: {{ formatDate(category.lastUsedAt) }}
-                </span>
-              </div>
-
-              <!-- 系統分類標識 -->
-              <div
-                v-if="category.scope === 'system'"
-                class="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center"
-                title="系統預設分類"
-              >
-                <svg
-                  class="w-3 h-3 text-white"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
     </div>
