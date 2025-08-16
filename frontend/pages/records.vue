@@ -179,13 +179,13 @@
                   <span v-if="isSubmitting">{{ isEditing ? '更新中...' : '新增中...' }}</span>
                   <span v-else>{{ isEditing ? '更新記錄' : '新增記錄' }}</span>
                 </button>
-                
+
                 <!-- 取消編輯按鈕 -->
                 <button
                   v-if="isEditing"
                   type="button"
-                  @click="cancelEdit"
                   class="w-full bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+                  @click="cancelEdit"
                 >
                   取消編輯
                 </button>
@@ -200,6 +200,34 @@
             <!-- 篩選區域 -->
             <div class="p-4 border-b border-gray-200">
               <div class="flex flex-wrap gap-4">
+                <!-- 年份選擇 -->
+                <select
+                  v-model="filters.year"
+                  class="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option
+                    v-for="year in yearOptions"
+                    :key="year"
+                    :value="year"
+                  >
+                    {{ year }}年
+                  </option>
+                </select>
+
+                <!-- 月份選擇 -->
+                <select
+                  v-model="filters.month"
+                  class="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option
+                    v-for="month in monthOptions"
+                    :key="month.value"
+                    :value="month.value"
+                  >
+                    {{ month.label }}
+                  </option>
+                </select>
+
                 <!-- 類型篩選 -->
                 <select
                   v-model="filters.type"
@@ -513,12 +541,40 @@ const filters = ref({
   type: '',
   categoryId: '',
   search: '',
+  year: new Date().getFullYear(),
+  month: new Date().getMonth() + 1, // 1-12
 })
 
 // 計算屬性
 const filteredCategories = computed(() => {
   return categories.value.filter(category => category.type === form.value.type)
 })
+
+// 年份選項 (當前年份的前後5年)
+const yearOptions = computed(() => {
+  const currentYear = new Date().getFullYear()
+  const years = []
+  for (let i = currentYear - 5; i <= currentYear + 1; i++) {
+    years.push(i)
+  }
+  return years.reverse() // 最新年份在前
+})
+
+// 月份選項
+const monthOptions = [
+  { value: 1, label: '1月' },
+  { value: 2, label: '2月' },
+  { value: 3, label: '3月' },
+  { value: 4, label: '4月' },
+  { value: 5, label: '5月' },
+  { value: 6, label: '6月' },
+  { value: 7, label: '7月' },
+  { value: 8, label: '8月' },
+  { value: 9, label: '9月' },
+  { value: 10, label: '10月' },
+  { value: 11, label: '11月' },
+  { value: 12, label: '12月' },
+]
 
 // 監聽器
 watch(() => form.value.type, () => {
@@ -559,6 +615,8 @@ const fetchRecords = async () => {
     if (filters.value.type) params.append('type', filters.value.type)
     if (filters.value.categoryId) params.append('categoryId', filters.value.categoryId)
     if (filters.value.search) params.append('search', filters.value.search)
+    if (filters.value.year) params.append('year', filters.value.year.toString())
+    if (filters.value.month) params.append('month', filters.value.month.toString())
 
     const response = await $fetch(`/api/records?${params}`) as any
     records.value = response.data.items
@@ -595,7 +653,8 @@ const handleSubmit = async () => {
         body: payload,
       })
       alert('記錄更新成功！')
-    } else {
+    }
+    else {
       // 新增模式 - 創建記錄
       await $fetch('/api/records', {
         method: 'POST',
@@ -638,7 +697,7 @@ const removeTag = (tagToRemove: string) => {
 
 const editRecord = (record: Record) => {
   editingRecord.value = record
-  
+
   // 填入表單數據
   form.value = {
     type: record.type,
@@ -648,9 +707,9 @@ const editRecord = (record: Record) => {
     date: new Date(record.date).toISOString().split('T')[0],
     tags: record.tags ? [...record.tags] : [],
   }
-  
+
   tagsInput.value = ''
-  
+
   // 滾動到表單頂部
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }

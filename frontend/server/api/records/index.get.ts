@@ -15,6 +15,8 @@ const querySchema = z.object({
   limit: z.string().transform(val => Number.parseInt(val, 10)).pipe(z.number().min(1).max(100)).default(20),
   type: z.enum(['income', 'expense']).optional(),
   categoryId: z.string().optional(),
+  year: z.string().transform(val => Number.parseInt(val, 10)).pipe(z.number()).optional(),
+  month: z.string().transform(val => Number.parseInt(val, 10)).pipe(z.number().min(1).max(12)).optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   search: z.string().optional(),
@@ -55,8 +57,22 @@ export default defineEventHandler(async (event) => {
       filters.categoryId = query.categoryId
     }
 
-    // 日期範圍篩選
-    if (query.startDate || query.endDate) {
+    // 年月篩選
+    if (query.year || query.month) {
+      const year = query.year || new Date().getFullYear()
+      const month = query.month || new Date().getMonth() + 1
+
+      // 建立該月份的開始和結束日期
+      const startDate = new Date(year, month - 1, 1) // month-1 因為 JS Date 的月份是 0-11
+      const endDate = new Date(year, month, 0, 23, 59, 59, 999) // month 的下個月的第0天 = 當月最後一天
+
+      filters.date = {
+        $gte: startDate,
+        $lte: endDate,
+      }
+    }
+    // 日期範圍篩選 (如果沒有年月篩選才使用)
+    else if (query.startDate || query.endDate) {
       const dateFilter: Record<string, unknown> = {}
       if (query.startDate) {
         dateFilter.$gte = new Date(query.startDate)
