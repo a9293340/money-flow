@@ -585,65 +585,63 @@
           </div>
         </div>
 
-        <!-- 趨勢圖載入狀態 -->
-        <div
-          v-if="isTrendsLoading"
-          class="text-center py-8"
-        >
-          <div class="text-gray-500">
-            載入趨勢資料中...
-          </div>
-        </div>
-
-        <!-- 趨勢圖內容 -->
-        <div
-          v-else-if="trendsData?.trends && trendsData.trends.length > 0"
-          class="space-y-6"
-        >
-          <!-- 圖表容器 -->
-          <div class="relative h-80">
-            <canvas
-              ref="trendsChartRef"
-              class="w-full h-full"
-            />
+        <!-- 圖表容器 - 始終存在以確保 ref 可用 -->
+        <div class="relative h-80 mb-6">
+          <canvas
+            ref="trendsChartRef"
+            class="w-full h-full"
+            :style="{ display: trendsData?.trends && trendsData.trends.length > 0 ? 'block' : 'none' }"
+          />
+          
+          <!-- 載入狀態覆蓋層 -->
+          <div
+            v-if="isTrendsLoading"
+            class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75"
+          >
+            <div class="text-gray-500">
+              載入趨勢資料中...
+            </div>
           </div>
 
-          <!-- 趨勢摘要 -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-green-600">
-                ${{ trendsData.summary.avgIncome.toFixed(2) }}
-              </div>
-              <div class="text-sm text-gray-600">
-                平均月收入
-              </div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-red-600">
-                ${{ trendsData.summary.avgExpense.toFixed(2) }}
-              </div>
-              <div class="text-sm text-gray-600">
-                平均月支出
-              </div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-blue-600">
-                ${{ trendsData.summary.avgNetAmount.toFixed(2) }}
-              </div>
-              <div class="text-sm text-gray-600">
-                平均月淨額
-              </div>
+          <!-- 無資料狀態覆蓋層 -->
+          <div
+            v-else-if="!trendsData?.trends || trendsData.trends.length === 0"
+            class="absolute inset-0 flex items-center justify-center bg-gray-50"
+          >
+            <div class="text-gray-500">
+              暫無趨勢資料
             </div>
           </div>
         </div>
 
-        <!-- 無資料狀態 -->
+        <!-- 趨勢摘要 -->
         <div
-          v-else
-          class="text-center py-8"
+          v-if="trendsData?.trends && trendsData.trends.length > 0 && !isTrendsLoading"
+          class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200"
         >
-          <div class="text-gray-500">
-            暫無趨勢資料
+          <div class="text-center">
+            <div class="text-2xl font-bold text-green-600">
+              ${{ trendsData.summary.avgIncome.toFixed(2) }}
+            </div>
+            <div class="text-sm text-gray-600">
+              平均月收入
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-red-600">
+              ${{ trendsData.summary.avgExpense.toFixed(2) }}
+            </div>
+            <div class="text-sm text-gray-600">
+              平均月支出
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600">
+              ${{ trendsData.summary.avgNetAmount.toFixed(2) }}
+            </div>
+            <div class="text-sm text-gray-600">
+              平均月淨額
+            </div>
           </div>
         </div>
       </div>
@@ -1083,12 +1081,23 @@ const fetchTrends = async () => {
 }
 
 const renderTrendsChart = async () => {
+  console.log('renderTrendsChart 被調用，檢查條件:', {
+    hasChartRef: !!trendsChartRef.value,
+    hasTrendsData: !!trendsData.value,
+    trendsLength: trendsData.value?.trends?.length || 0,
+    chartRefValue: trendsChartRef.value
+  })
+
   if (!trendsChartRef.value || !trendsData.value || trendsData.value.trends.length === 0) {
-    console.log('renderTrendsChart: 缺少必要條件', {
-      hasChartRef: !!trendsChartRef.value,
-      hasTrendsData: !!trendsData.value,
-      trendsLength: trendsData.value?.trends?.length || 0
-    })
+    console.log('renderTrendsChart: 缺少必要條件，延遲 100ms 後重試')
+    
+    // 如果 Canvas 元素還沒準備好，等待一下再試
+    if (!trendsChartRef.value && trendsData.value && trendsData.value.trends.length > 0) {
+      setTimeout(async () => {
+        console.log('延遲重試 renderTrendsChart')
+        await renderTrendsChart()
+      }, 100)
+    }
     return
   }
 
