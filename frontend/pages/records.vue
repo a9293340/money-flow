@@ -261,13 +261,40 @@
                   </option>
                 </select>
 
-                <!-- 搜尋 -->
+                <!-- 描述搜尋 -->
                 <input
                   v-model="filters.search"
                   type="text"
                   placeholder="搜尋描述..."
-                  class="flex-1 min-w-[200px] px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  class="flex-1 min-w-[150px] px-3 py-2 border border-gray-300 rounded-md text-sm"
                 >
+
+                <!-- 標籤搜尋 -->
+                <div class="flex-1 min-w-[180px]">
+                  <input
+                    v-model="filters.tags"
+                    type="text"
+                    placeholder="標籤搜尋 (多個用逗號分隔)"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  >
+                  
+                  <!-- 標籤建議 -->
+                  <div 
+                    v-if="suggestedTags.length > 0"
+                    class="mt-2 flex flex-wrap gap-1"
+                  >
+                    <span class="text-xs text-gray-500 mr-2">常用標籤:</span>
+                    <button
+                      v-for="tag in suggestedTags.slice(0, 6)"
+                      :key="tag"
+                      type="button"
+                      class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-800 transition-colors"
+                      @click="addTagToSearch(tag)"
+                    >
+                      {{ tag }}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -536,11 +563,15 @@ const form = ref({
 
 const tagsInput = ref('')
 
+// 標籤建議
+const suggestedTags = ref<string[]>([])
+
 // 篩選條件
 const filters = ref({
   type: '',
   categoryId: '',
   search: '',
+  tags: '',
   year: new Date().getFullYear(),
   month: new Date().getMonth() + 1, // 1-12
 })
@@ -604,6 +635,27 @@ const fetchCategories = async () => {
   }
 }
 
+// 獲取標籤建議（從現有記錄中提取）
+const fetchSuggestedTags = async () => {
+  try {
+    // 獲取所有記錄的標籤
+    const response = await $fetch('/api/records?limit=100') as any
+    const allTags = new Set<string>()
+    
+    response.data.items.forEach((record: any) => {
+      if (record.tags && Array.isArray(record.tags)) {
+        record.tags.forEach((tag: string) => allTags.add(tag))
+      }
+    })
+    
+    // 轉換為陣列並排序
+    suggestedTags.value = Array.from(allTags).sort()
+  }
+  catch (error) {
+    console.error('獲取標籤建議失敗:', error)
+  }
+}
+
 const fetchRecords = async () => {
   isLoading.value = true
   try {
@@ -615,6 +667,7 @@ const fetchRecords = async () => {
     if (filters.value.type) params.append('type', filters.value.type)
     if (filters.value.categoryId) params.append('categoryId', filters.value.categoryId)
     if (filters.value.search) params.append('search', filters.value.search)
+    if (filters.value.tags) params.append('tags', filters.value.tags)
     if (filters.value.year) params.append('year', filters.value.year.toString())
     if (filters.value.month) params.append('month', filters.value.month.toString())
 
@@ -718,6 +771,19 @@ const cancelEdit = () => {
   resetForm()
 }
 
+// 添加標籤到搜尋
+const addTagToSearch = (tag: string) => {
+  if (!filters.value.tags) {
+    filters.value.tags = tag
+  } else {
+    // 檢查標籤是否已存在
+    const existingTags = filters.value.tags.split(',').map(t => t.trim())
+    if (!existingTags.includes(tag)) {
+      filters.value.tags += ', ' + tag
+    }
+  }
+}
+
 const deleteRecord = async (recordId: string) => {
   if (!confirm('確定要刪除這筆記錄嗎？')) return
 
@@ -754,6 +820,7 @@ const formatDate = (dateString: string) => {
 // 生命週期
 onMounted(async () => {
   await fetchCategories()
+  await fetchSuggestedTags()
   await fetchRecords()
 })
 </script>
