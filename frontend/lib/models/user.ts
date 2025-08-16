@@ -39,6 +39,10 @@ export interface IUser extends Document {
     emailVerified: boolean
     emailVerificationToken?: string
   }
+  // 🆕 群組相關欄位 (Phase 2)
+  groupId?: string | null
+  groupRole?: 'owner' | 'admin' | 'member' | null
+  groupJoinedAt?: Date | null
   createdAt: Date
   updatedAt: Date
 
@@ -159,6 +163,24 @@ const userSchema = new Schema<IUser>({
     emailVerificationToken: String,
   },
 
+  // === 🆕 群組相關欄位 (Phase 2) ===
+  groupId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Group',
+    default: null, // null = 未加入任何群組
+  },
+
+  groupRole: {
+    type: String,
+    enum: ['owner', 'admin', 'member'],
+    default: null,
+  },
+
+  groupJoinedAt: {
+    type: Date,
+    default: null,
+  },
+
 }, {
   timestamps: true,
   toJSON: {
@@ -182,6 +204,10 @@ const userSchema = new Schema<IUser>({
 userSchema.index({ 'security.lastLoginAt': -1 })
 userSchema.index({ 'security.passwordResetToken': 1 })
 userSchema.index({ 'security.emailVerificationToken': 1 })
+
+// 群組相關索引 (Phase 2)
+userSchema.index({ groupId: 1 })
+userSchema.index({ groupId: 1, groupRole: 1 })
 
 // 密碼比較方法
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {

@@ -1,93 +1,14 @@
 <template>
-  <div class="min-h-screen bg-gradient-soft">
-    <!-- Navigation Header -->
-    <header class="bg-white/70 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-40">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
-          <!-- Logo & Brand -->
-          <div class="flex items-center space-x-4">
-            <div
-              class="inline-flex items-center justify-center w-10 h-10 bg-gradient-brand rounded-xl shadow-card cursor-pointer select-none transition-transform hover:scale-105"
-              @click="handleLogoClick"
-            >
-              <svg
-                class="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                />
-              </svg>
-            </div>
-            <div>
-              <h1 class="text-xl font-bold text-gray-900">
-                <span class="text-brand">Money</span> Flow
-              </h1>
-              <p class="text-xs text-gray-500">
-                財務管理系統
-              </p>
-            </div>
-          </div>
-
-          <!-- User Menu -->
-          <div class="flex items-center space-x-4">
-            <!-- Platform Info -->
-
-            <!-- User Avatar & Name -->
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
-                <span class="text-white text-sm font-medium">
-                  {{ user?.name?.charAt(0)?.toUpperCase() || 'U' }}
-                </span>
-              </div>
-              <div class="hidden sm:block">
-                <p class="text-sm font-medium text-gray-900">
-                  {{ user?.name || 'Loading...' }}
-                </p>
-                <p class="text-xs text-gray-500">
-                  {{ user?.email }}
-                </p>
-              </div>
-            </div>
-
-            <!-- Logout Button -->
-            <button
-              :disabled="loading"
-              class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 transition-colors duration-200"
-              @click="handleLogout"
-            >
-              <svg
-                class="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-              <span v-if="!loading">登出</span>
-              <span v-else>登出中...</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <!-- App Header -->
+    <AppHeader :user="user" />
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <!-- Welcome Section -->
-      <div class="mb-8 animate-fade-in">
+      <div class="mb-8">
         <div class="text-center">
-          <h2 class="text-3xl font-bold text-gray-900 mb-2">
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             歡迎回來，{{ user?.name || 'Loading...' }}
           </h2>
           <p class="text-gray-600">
@@ -96,436 +17,212 @@
         </div>
       </div>
 
-      <!-- Dashboard Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Financial Overview Cards (Left Column) -->
-        <div class="lg:col-span-2 space-y-6">
-          <!-- Stats Cards Row -->
-          <!-- 桌面版: 網格布局 -->
-          <div class="hidden sm:grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <!-- Total Balance -->
-            <div class="card p-6 text-center group hover:shadow-elevated transition-all duration-300 animate-slide-up">
-              <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                <svg
-                  class="w-6 h-6 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                  />
-                </svg>
-              </div>
-              <h3 class="text-2xl font-bold text-gray-900 mb-1">
-                $0
-              </h3>
-              <p class="text-sm text-gray-500">
-                總餘額
-              </p>
-            </div>
-
-            <!-- This Month Income -->
-            <div
-              class="card p-6 text-center group hover:shadow-elevated transition-all duration-300 animate-slide-up"
-              style="animation-delay: 0.1s"
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <!-- Total Balance -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+          <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl mb-4">
+            <svg
+              class="w-6 h-6 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-success-500 to-success-600 rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                <svg
-                  class="w-6 h-6 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M7 11l5-5m0 0l5 5m-5-5v12"
-                  />
-                </svg>
-              </div>
-              <h3 class="text-2xl font-bold text-success-700 mb-1">
-                $0
-              </h3>
-              <p class="text-sm text-gray-500">
-                本月收入
-              </p>
-            </div>
-
-            <!-- This Month Expenses -->
-            <div
-              class="card p-6 text-center group hover:shadow-elevated transition-all duration-300 animate-slide-up"
-              style="animation-delay: 0.2s"
-            >
-              <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-danger-500 to-danger-600 rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                <svg
-                  class="w-6 h-6 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M17 13l-5 5m0 0l-5-5m5 5V6"
-                  />
-                </svg>
-              </div>
-              <h3 class="text-2xl font-bold text-danger-700 mb-1">
-                $0
-              </h3>
-              <p class="text-sm text-gray-500">
-                本月支出
-              </p>
-            </div>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+              />
+            </svg>
           </div>
-
-          <!-- 移動端: 水平滑動布局 -->
-          <div class="sm:hidden">
-            <div class="overflow-x-auto pb-4">
-              <div
-                class="flex gap-4 px-4"
-                style="width: max-content;"
-              >
-                <!-- Total Balance -->
-                <div class="card p-6 text-center group hover:shadow-elevated transition-all duration-300 animate-slide-up flex-shrink-0 w-72">
-                  <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <svg
-                      class="w-6 h-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                      />
-                    </svg>
-                  </div>
-                  <h3 class="text-2xl font-bold text-gray-900 mb-1">
-                    $0
-                  </h3>
-                  <p class="text-sm text-gray-500">
-                    總餘額
-                  </p>
-                </div>
-
-                <!-- This Month Income -->
-                <div class="card p-6 text-center group hover:shadow-elevated transition-all duration-300 animate-slide-up flex-shrink-0 w-72">
-                  <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-success-500 to-success-600 rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <svg
-                      class="w-6 h-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M7 11l5-5m0 0l5 5m-5-5v12"
-                      />
-                    </svg>
-                  </div>
-                  <h3 class="text-2xl font-bold text-success-700 mb-1">
-                    $0
-                  </h3>
-                  <p class="text-sm text-gray-500">
-                    本月收入
-                  </p>
-                </div>
-
-                <!-- This Month Expenses -->
-                <div class="card p-6 text-center group hover:shadow-elevated transition-all duration-300 animate-slide-up flex-shrink-0 w-72">
-                  <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-danger-500 to-danger-600 rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <svg
-                      class="w-6 h-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M17 13l-5 5m0 0l-5-5m5 5V6"
-                      />
-                    </svg>
-                  </div>
-                  <h3 class="text-2xl font-bold text-danger-700 mb-1">
-                    $0
-                  </h3>
-                  <p class="text-sm text-gray-500">
-                    本月支出
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <!-- 滑動指示器 -->
-            <div class="flex justify-center mt-4">
-              <div class="flex items-center space-x-2">
-                <div class="w-6 h-1 bg-primary-300 rounded-full" />
-                <div class="w-2 h-1 bg-gray-300 rounded-full" />
-                <div class="w-2 h-1 bg-gray-300 rounded-full" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Recent Transactions -->
-          <div
-            class="card p-6 animate-slide-up"
-            style="animation-delay: 0.3s"
-          >
-            <div class="flex items-center justify-between mb-6">
-              <h3 class="text-lg font-semibold text-gray-900">
-                近期交易
-              </h3>
-              <button class="btn-secondary text-sm px-4 py-2">
-                查看全部
-              </button>
-            </div>
-
-            <!-- Empty State -->
-            <div class="text-center py-12">
-              <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                <svg
-                  class="w-8 h-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-              </div>
-              <h4 class="text-lg font-medium text-gray-900 mb-2">
-                尚無交易紀錄
-              </h4>
-              <p class="text-gray-500 mb-6">
-                開始新增您的第一筆收支記錄
-              </p>
-              <button class="btn-primary px-6 py-3">
-                <svg
-                  class="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                新增交易
-              </button>
-            </div>
-          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-1">
+            ${{ stats?.netAmount?.toFixed(2) || '0.00' }}
+          </h3>
+          <p class="text-sm text-gray-500">
+            總餘額
+          </p>
         </div>
 
-        <!-- Right Sidebar -->
-        <div class="space-y-6">
-          <!-- User Profile Card -->
-          <div
-            class="card p-6 animate-slide-up"
-            style="animation-delay: 0.4s"
-          >
-            <div
-              v-if="userError"
-              class="bg-danger-50 border border-danger-200 rounded-lg p-4 mb-4"
+        <!-- This Month Income -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+          <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl mb-4">
+            <svg
+              class="w-6 h-6 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <div class="flex items-start">
-                <svg
-                  class="w-5 h-5 text-danger-400 mt-0.5 mr-3 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-                <div>
-                  <h3 class="text-sm font-medium text-danger-800 mb-1">
-                    載入失敗
-                  </h3>
-                  <p class="text-sm text-danger-700">
-                    {{ userError }}
-                  </p>
-                </div>
-              </div>
-            </div>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M7 11l5-5m0 0l5 5m-5-5v12"
+              />
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-green-600 mb-1">
+            ${{ stats?.totalIncome?.toFixed(2) || '0.00' }}
+          </h3>
+          <p class="text-sm text-gray-500">
+            本月收入
+          </p>
+        </div>
 
-            <div
-              v-if="user"
-              class="space-y-4"
+        <!-- This Month Expenses -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+          <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl mb-4">
+            <svg
+              class="w-6 h-6 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
-                  <span class="text-white text-lg font-semibold">
-                    {{ user.name.charAt(0).toUpperCase() }}
-                  </span>
-                </div>
-                <div>
-                  <h3 class="font-semibold text-gray-900">
-                    {{ user.name }}
-                  </h3>
-                  <p class="text-sm text-gray-500">
-                    {{ user.email }}
-                  </p>
-                </div>
-              </div>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 13l-5 5m0 0l-5-5m5 5V6"
+              />
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-red-600 mb-1">
+            ${{ stats?.totalExpense?.toFixed(2) || '0.00' }}
+          </h3>
+          <p class="text-sm text-gray-500">
+            本月支出
+          </p>
+        </div>
+      </div>
 
-              <div class="space-y-3 pt-4 border-t border-gray-100">
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-500">電子郵件驗證</span>
-                  <span
-                    :class="user.emailVerified ? 'text-success-600' : 'text-danger-600'"
-                    class="font-medium"
-                  >
-                    {{ user.emailVerified ? '已驗證' : '未驗證' }}
-                  </span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-500">註冊時間</span>
-                  <span class="text-gray-900">{{ formatDate(user.createdAt) }}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-500">最後登入</span>
-                  <span class="text-gray-900">{{ formatDate(user.lastLoginAt) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div
-              v-else-if="!userError"
-              class="text-center py-6"
-            >
+      <!-- Quick Actions -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Add Record Card -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
               <svg
-                class="animate-spin h-8 w-8 text-primary-600 mx-auto"
+                class="w-5 h-5 text-blue-600"
                 fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                />
                 <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
                 />
               </svg>
-              <p class="mt-2 text-sm text-gray-500">
-                載入使用者資訊中...
-              </p>
             </div>
-          </div>
-
-          <!-- Quick Actions -->
-          <div
-            class="card p-6 animate-slide-up"
-            style="animation-delay: 0.6s"
+            快速記帳
+          </h3>
+          <p class="text-gray-600 mb-4">
+            快速添加您的收支記錄
+          </p>
+          <NuxtLink
+            to="/records"
+            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">
-              快速操作
-            </h3>
-            <div class="space-y-3">
-              <button class="w-full btn-primary text-left px-4 py-3">
-                <svg
-                  class="w-5 h-5 mr-3 inline-block"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                新增交易
-              </button>
-              <button class="w-full btn-secondary text-left px-4 py-3">
-                <svg
-                  class="w-5 h-5 mr-3 inline-block"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-                查看報告
-              </button>
-              <button class="w-full btn-secondary text-left px-4 py-3">
-                <svg
-                  class="w-5 h-5 mr-3 inline-block"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                帳戶設定
-              </button>
+            開始記帳
+            <svg
+              class="w-4 h-4 ml-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </NuxtLink>
+        </div>
+
+        <!-- Categories Card -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+              <svg
+                class="w-5 h-5 text-purple-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                />
+              </svg>
             </div>
-          </div>
+            分類管理
+          </h3>
+          <p class="text-gray-600 mb-4">
+            管理您的收支分類設定
+          </p>
+          <NuxtLink
+            to="/categories"
+            class="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            管理分類
+            <svg
+              class="w-4 h-4 ml-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </NuxtLink>
+        </div>
+      </div>
+
+      <!-- Recent Transactions (if needed) -->
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">
+            近期記錄
+          </h3>
+          <NuxtLink
+            to="/records"
+            class="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            查看全部
+          </NuxtLink>
+        </div>
+        <div class="text-center py-8 text-gray-500">
+          <svg
+            class="w-12 h-12 mx-auto mb-3 opacity-50"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <p>點擊「開始記帳」來添加您的第一筆記錄</p>
         </div>
       </div>
     </main>
-
-    <!-- 配置資訊彈窗 -->
-    <ConfigInfoModal
-      :show="showConfigModal"
-      @close="closeConfigModal"
-      @open-debug="openDebugFromConfig"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { apiFetch, getApiUrl } from '~/lib/utils/client'
+import { ref, onMounted } from 'vue'
 import { authenticatedFetch, handleRequireLogin } from '~/lib/utils/auth'
-
-// Logo 點擊配置觸發器
-const { handleLogoClick, showConfigModal, closeConfigModal, openDebugFromConfig } = useDebugTrigger()
 
 // 頁面設定
 definePageMeta({
@@ -536,10 +233,12 @@ definePageMeta({
 const user = ref<any>(null)
 const userError = ref('')
 const loading = ref(false)
+const stats = ref<any>(null)
 
 // 頁面載入時獲取用戶資料
 onMounted(() => {
   loadUser()
+  loadStats()
 })
 
 // 載入使用者資訊
@@ -550,7 +249,6 @@ async function loadUser() {
   userError.value = ''
 
   try {
-    // 使用 authenticatedFetch 進行 API 調用，內建自動刷新功能
     const response = await authenticatedFetch<{
       success: boolean
       message?: string
@@ -578,7 +276,6 @@ async function loadUser() {
     }
     else {
       userError.value = '載入使用者資訊失敗'
-      // 對於非認證錯誤，不自動重定向
     }
   }
   finally {
@@ -586,36 +283,28 @@ async function loadUser() {
   }
 }
 
-// 處理登出
-async function handleLogout() {
-  loading.value = true
+// 載入統計數據
+async function loadStats() {
   try {
-    const apiUrl = getApiUrl()
-    const logoutUrl = `${apiUrl}/logout`
+    const response = await authenticatedFetch<{
+      success: boolean
+      data?: {
+        summary?: any
+      }
+    }>('/api/records')
 
-    await apiFetch(logoutUrl, { method: 'POST' })
-    navigateTo('/login')
+    if (response.success && response.data?.summary) {
+      stats.value = response.data.summary
+    }
   }
   catch (error) {
-    console.error('Logout error:', error)
-    // 即使登出失敗也跳轉到登入頁面
-    navigateTo('/login')
+    console.error('載入統計失敗:', error)
   }
-  finally {
-    loading.value = false
-  }
-}
-
-// 格式化日期
-function formatDate(dateString: string | undefined) {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleString('zh-TW')
 }
 
 // 格式化歡迎時間
 function formatWelcomeTime() {
   const hour = new Date().getHours()
-  if (hour < 6) return '深夜好'
   if (hour < 12) return '早安'
   if (hour < 18) return '午安'
   return '晚安'

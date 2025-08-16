@@ -21,6 +21,12 @@ export interface IRecord extends Document {
   description?: string
   categoryId: string
   date: Date
+
+  // === 🆕 Context 相關欄位 ===
+  context: 'personal' | 'group'
+  groupId?: string | null
+  createdBy: string
+
   currency: string
   exchangeRate?: number
   baseCurrencyAmount: number // 以基礎貨幣計算的金額
@@ -40,6 +46,10 @@ export interface IRecord extends Document {
     importId?: string // 批量匯入時的識別碼
     originalData?: Record<string, unknown> // 保留原始匯入資料
   }
+
+  // === 系統欄位 ===
+  isDeleted: boolean
+
   createdAt: Date
   updatedAt: Date
 
@@ -53,6 +63,27 @@ const recordSchema = new Schema<IRecord>({
     type: String,
     required: [true, '使用者ID為必填欄位'],
     index: true,
+  },
+
+  // === 🆕 Context 相關欄位 ===
+  context: {
+    type: String,
+    enum: ['personal', 'group'],
+    required: true,
+    default: 'personal',
+  },
+
+  // 群組 ID (個人記錄為 null)
+  groupId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Group',
+    default: null,
+  },
+
+  // 記錄建立者 (個人模式下等於 userId)
+  createdBy: {
+    type: String,
+    required: [true, '建立者為必填欄位'],
   },
 
   amount: {
@@ -192,9 +223,14 @@ const recordSchema = new Schema<IRecord>({
     },
     importId: {
       type: String,
-      index: true,
     },
     originalData: Schema.Types.Mixed,
+  },
+
+  // === 系統欄位 ===
+  isDeleted: {
+    type: Boolean,
+    default: false,
   },
 
 }, {
@@ -212,11 +248,20 @@ const recordSchema = new Schema<IRecord>({
 })
 
 // 索引設定
-recordSchema.index({ userId: 1, date: -1 }) // 主要查詢索引
-recordSchema.index({ userId: 1, type: 1, date: -1 }) // 按類型查詢
-recordSchema.index({ userId: 1, categoryId: 1, date: -1 }) // 按分類查詢
-recordSchema.index({ userId: 1, date: -1, type: 1 }) // 統計查詢
+// 個人記錄查詢 (Phase 1)
+recordSchema.index({ userId: 1, context: 1, date: -1 })
+recordSchema.index({ userId: 1, categoryId: 1, date: -1 })
+recordSchema.index({ userId: 1, type: 1, date: -1 })
+
+// 群組記錄查詢 (Phase 2)
+recordSchema.index({ groupId: 1, context: 1, date: -1 })
+recordSchema.index({ groupId: 1, createdBy: 1, date: -1 })
+
+// 通用查詢
+recordSchema.index({ createdBy: 1, date: -1 })
+recordSchema.index({ date: -1, type: 1 })
 recordSchema.index({ tags: 1 }) // 標籤搜尋
+recordSchema.index({ isDeleted: 1, date: -1 })
 recordSchema.index({ 'metadata.importId': 1 }) // 批量匯入查詢
 
 // 文字搜尋索引
@@ -237,7 +282,8 @@ recordSchema.virtual('category', {
 // 中間件：自動計算基礎貨幣金額
 recordSchema.pre('save', function (next) {
   if (this.isModified('amount') || this.isModified('exchangeRate')) {
-    this.baseCurrencyAmount = this.amount * (this.exchangeRate || 1)
+    const record = this as IRecord
+    record.baseCurrencyAmount = record.amount * (record.exchangeRate || 1)
   }
   next()
 })
@@ -246,14 +292,15 @@ recordSchema.pre('save', function (next) {
 recordSchema.pre('save', async function (next) {
   if (this.isModified('categoryId') || this.isModified('type')) {
     try {
+      const record = this as IRecord
       const Category = mongoose.model('Category')
-      const category = await Category.findById(this.categoryId)
+      const category = await Category.findById(record.categoryId)
 
       if (!category) {
         return next(new Error('指定的分類不存在'))
       }
 
-      if (category.type !== this.type) {
+      if (category.type !== record.type) {
         return next(new Error('記錄類型與分類類型不符'))
       }
 
@@ -266,6 +313,30 @@ recordSchema.pre('save', async function (next) {
   else {
     next()
   }
+})
+
+// 中間件：Context 一致性驗證
+recordSchema.pre('save', function (next) {
+  const record = this as IRecord
+
+  // 個人模式驗證
+  if (record.context === 'personal') {
+    if (record.groupId !== null) {
+      return next(new Error('個人記錄的 groupId 必須為 null'))
+    }
+    if (record.createdBy.toString() !== record.userId.toString()) {
+      return next(new Error('個人記錄的 createdBy 必須等於 userId'))
+    }
+  }
+
+  // 群組模式驗證 (Phase 2)
+  if (record.context === 'group') {
+    if (!record.groupId) {
+      return next(new Error('群組記錄必須指定 groupId'))
+    }
+  }
+
+  next()
 })
 
 // 靜態方法：取得使用者記錄
@@ -397,6 +468,77 @@ recordSchema.statics.getCategoryStats = function (
       },
     },
     { $sort: { totalAmount: -1 } },
+  ])
+}
+
+// 靜態方法：根據使用者和 Context 查找記錄
+recordSchema.statics.findByUserAndContext = function (userId: string, context: 'personal' | 'group', filters = {}) {
+  const baseQuery = {
+    isDeleted: false,
+    ...filters,
+  }
+
+  if (context === 'personal') {
+    return this.find({
+      ...baseQuery,
+      userId,
+      context: 'personal',
+    }).populate('categoryId')
+  }
+
+  // Phase 2: 群組查詢將在此實作
+  throw new Error('Group context not implemented in Phase 1')
+}
+
+// 靜態方法：個人記錄統計
+recordSchema.statics.getPersonalStatistics = function (userId: string, startDate?: Date, endDate?: Date) {
+  const matchStage: Record<string, unknown> = {
+    userId: new mongoose.Types.ObjectId(userId),
+    context: 'personal',
+    isDeleted: false,
+  }
+
+  if (startDate && endDate) {
+    matchStage.date = {
+      $gte: startDate,
+      $lte: endDate,
+    }
+  }
+
+  return this.aggregate([
+    { $match: matchStage },
+    {
+      $group: {
+        _id: '$type',
+        total: { $sum: '$baseCurrencyAmount' },
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        income: {
+          $sum: {
+            $cond: [{ $eq: ['$_id', 'income'] }, '$total', 0],
+          },
+        },
+        expense: {
+          $sum: {
+            $cond: [{ $eq: ['$_id', 'expense'] }, '$total', 0],
+          },
+        },
+        totalRecords: { $sum: '$count' },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        totalIncome: '$income',
+        totalExpense: '$expense',
+        netAmount: { $subtract: ['$income', '$expense'] },
+        totalRecords: 1,
+      },
+    },
   ])
 }
 

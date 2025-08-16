@@ -18,6 +18,8 @@ export interface ICategoryStatics {
   createDefaultCategories(): Promise<void>
   getDefaultCategories(type?: CategoryType): Promise<ICategory[]>
   getUserCategories(userId: string, type?: CategoryType): Promise<ICategory[]>
+  getPersonalCategories(userId: string, type?: CategoryType): Promise<ICategory[]>
+  findByUserAndScope(userId: string, scope: 'personal' | 'group', type?: CategoryType): Promise<ICategory[]>
 }
 
 // 分類文檔介面
@@ -28,15 +30,38 @@ export interface ICategory extends Document {
   icon: string
   color: string
   description?: string
-  isDefault: boolean
+
+  // === 使用者關聯 ===
+  userId: string
+
+  // 父分類 (支援分類層級)
+  parentId?: string | null
+
+  // === 🆕 Context 相關欄位 ===
+  scope: 'personal' | 'group' | 'system'
+  groupId?: string | null
+  editableBy: 'owner' | 'admin' | 'all'
+
+  // === 分類設定 ===
+  isSystem: boolean
   isActive: boolean
-  userId?: string // 如果是 null，表示是系統預設分類
-  parentId?: string // 支援子分類
   sortOrder: number
+
+  // === 使用統計 ===
+  usageCount: number
+  lastUsedAt?: Date
+
+  // 舊欄位保持相容性
+  isDefault: boolean
   metadata?: {
     monthlyBudget?: number
     budgetAlert?: boolean
   }
+
+  // === 軟刪除支援 ===
+  isDeleted: boolean
+  deletedAt?: Date
+
   createdAt: Date
   updatedAt: Date
 }
@@ -80,36 +105,69 @@ const categorySchema = new Schema<ICategory>({
     maxlength: [200, '描述不能超過 200 個字元'],
   },
 
-  isDefault: {
-    type: Boolean,
+  // === 使用者關聯 ===
+  userId: {
+    type: String,
+    required: [true, '使用者為必填欄位'],
+  },
+
+  // 父分類 (支援分類層級)
+  parentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    default: null,
+  },
+
+  // === 🆕 Context 相關欄位 ===
+  scope: {
+    type: String,
+    enum: ['personal', 'group', 'system'],
     required: true,
+    default: 'personal',
+  },
+
+  // 群組 ID (個人分類為 null)
+  groupId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Group',
+    default: null,
+  },
+
+  // 群組分類的編輯權限 (Phase 2)
+  editableBy: {
+    type: String,
+    enum: ['owner', 'admin', 'all'], // all = 所有群組成員
+    default: 'all',
+  },
+
+  // === 分類設定 ===
+  isSystem: {
+    type: Boolean,
     default: false,
-    index: true,
   },
 
   isActive: {
     type: Boolean,
-    required: true,
     default: true,
-    index: true,
-  },
-
-  userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    index: true,
-    // null 表示系統預設分類
-  },
-
-  parentId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Category',
   },
 
   sortOrder: {
     type: Number,
-    required: true,
     default: 0,
+  },
+
+  // === 使用統計 ===
+  usageCount: {
+    type: Number,
+    default: 0,
+  },
+
+  lastUsedAt: Date,
+
+  // === 舊欄位保持相容性 ===
+  isDefault: {
+    type: Boolean,
+    default: false,
   },
 
   metadata: {
@@ -123,16 +181,35 @@ const categorySchema = new Schema<ICategory>({
     },
   },
 
+  // === 軟刪除支援 ===
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  deletedAt: Date,
+
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true },
 })
 
-// 複合索引 - 確保同一使用者的分類名稱不重複
-categorySchema.index({ userId: 1, name: 1, type: 1 }, { unique: true })
-categorySchema.index({ type: 1, isActive: 1, sortOrder: 1 })
-categorySchema.index({ userId: 1, type: 1, isActive: 1 })
+// 索引設定
+// 個人分類查詢 (Phase 1)
+categorySchema.index({ userId: 1, scope: 1, isActive: 1, isDeleted: 1 })
+categorySchema.index({ userId: 1, type: 1, isActive: 1, isDeleted: 1 })
+categorySchema.index({ isDeleted: 1, isActive: 1 })
+
+// 群組分類查詢 (Phase 2)
+categorySchema.index({ groupId: 1, scope: 1, isActive: 1, isDeleted: 1 })
+
+// 通用查詢
+categorySchema.index({ parentId: 1 })
+categorySchema.index({ sortOrder: 1 })
+categorySchema.index({ lastUsedAt: -1 })
+
+// 確保同一 scope 內的分類名稱不重複
+categorySchema.index({ userId: 1, scope: 1, name: 1, type: 1 }, { unique: true })
 
 // 虛擬欄位：子分類
 categorySchema.virtual('subcategories', {
@@ -141,19 +218,19 @@ categorySchema.virtual('subcategories', {
   foreignField: 'parentId',
 })
 
-// 靜態方法：取得預設分類
+// 靜態方法：取得系統分類
 categorySchema.statics.getDefaultCategories = function (type?: CategoryType) {
-  const query: Record<string, unknown> = { isDefault: true, isActive: true }
+  const query: Record<string, unknown> = { scope: 'system', isActive: true }
   if (type) query.type = type
   return this.find(query).sort({ sortOrder: 1 })
 }
 
-// 靜態方法：取得使用者分類
+// 靜態方法：取得使用者分類 (舊方法，保持相容性)
 categorySchema.statics.getUserCategories = function (userId: string, type?: CategoryType) {
   const query: Record<string, unknown> = {
     $or: [
-      { isDefault: true },
-      { userId: userId },
+      { scope: 'system' },
+      { userId, scope: 'personal' },
     ],
     isActive: true,
   }
@@ -162,6 +239,44 @@ categorySchema.statics.getUserCategories = function (userId: string, type?: Cate
   return this.find(query)
     .sort({ sortOrder: 1, name: 1 })
     .populate('subcategories')
+}
+
+// 靜態方法：取得個人分類 (Phase 1)
+categorySchema.statics.getPersonalCategories = function (userId: string, type?: CategoryType) {
+  const query: Record<string, unknown> = {
+    $or: [
+      { scope: 'system' },
+      { userId, scope: 'personal' },
+    ],
+    isActive: true,
+  }
+  if (type) query.type = type
+
+  return this.find(query)
+    .sort({ sortOrder: 1, name: 1 })
+    .populate('subcategories')
+}
+
+// 靜態方法：根據使用者和 Scope 查找分類
+categorySchema.statics.findByUserAndScope = function (userId: string, scope: 'personal' | 'group', type?: CategoryType) {
+  const baseQuery = {
+    isActive: true,
+  }
+
+  if (scope === 'personal') {
+    const query: Record<string, unknown> = {
+      ...baseQuery,
+      $or: [
+        { scope: 'system' },
+        { userId, scope: 'personal' },
+      ],
+    }
+    if (type) query.type = type
+    return this.find(query).sort({ sortOrder: 1, name: 1 })
+  }
+
+  // Phase 2: 群組查詢將在此實作
+  throw new Error('Group scope not implemented in Phase 1')
 }
 
 // 靜態方法：建立預設分類
@@ -188,8 +303,16 @@ categorySchema.statics.createDefaultCategories = async function () {
 
   for (const categoryData of defaultCategories) {
     await this.findOneAndUpdate(
-      { name: categoryData.name, type: categoryData.type, isDefault: true },
-      { ...categoryData, isDefault: true, isActive: true },
+      { name: categoryData.name, type: categoryData.type, scope: 'system' },
+      {
+        ...categoryData,
+        scope: 'system',
+        isSystem: true,
+        isActive: true,
+        isDefault: true, // 保持舊欄位相容性
+        userId: 'system', // 系統分類的特殊 userId
+        usageCount: 0,
+      },
       { upsert: true, new: true },
     )
   }
