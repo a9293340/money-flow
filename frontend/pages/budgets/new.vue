@@ -223,59 +223,45 @@
           <!-- 分類選擇 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              適用分類
+              適用分類（可選）
             </label>
             <div class="border border-gray-300 rounded-md p-3">
-              <div class="flex items-center mb-3">
-                <input
-                  v-model="allCategoriesSelected"
-                  type="checkbox"
-                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  @change="handleAllCategoriesToggle"
-                >
-                <label class="ml-2 text-sm text-gray-700">
-                  所有分類（全分類預算）
-                </label>
-              </div>
-
               <div
-                v-if="!allCategoriesSelected"
+                v-if="isLoadingCategories"
+                class="text-sm text-gray-500"
+              >
+                載入分類中...
+              </div>
+              <div
+                v-else-if="expenseCategories.length === 0"
+                class="text-sm text-gray-500"
+              >
+                沒有可用的支出分類
+              </div>
+              <div
+                v-else
                 class="space-y-2 max-h-40 overflow-y-auto"
               >
                 <div
-                  v-if="isLoadingCategories"
-                  class="text-sm text-gray-500"
+                  v-for="category in expenseCategories"
+                  :key="category._id"
+                  class="flex items-center"
                 >
-                  載入分類中...
-                </div>
-                <div
-                  v-else-if="expenseCategories.length === 0"
-                  class="text-sm text-gray-500"
-                >
-                  沒有可用的支出分類
-                </div>
-                <div v-else>
-                  <div
-                    v-for="category in expenseCategories"
-                    :key="category._id"
-                    class="flex items-center"
+                  <input
+                    v-model="form.categoryIds"
+                    :value="category._id"
+                    type="checkbox"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   >
-                    <input
-                      v-model="form.categoryIds"
-                      :value="category._id"
-                      type="checkbox"
-                      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    >
-                    <label class="ml-2 text-sm text-gray-700 flex items-center">
-                      <span class="mr-2">{{ category.icon }}</span>
-                      {{ category.name }}
-                    </label>
-                  </div>
+                  <label class="ml-2 text-sm text-gray-700 flex items-center">
+                    <span class="mr-2">{{ category.icon }}</span>
+                    {{ category.name }}
+                  </label>
                 </div>
               </div>
             </div>
             <p class="text-xs text-gray-500 mt-1">
-              選擇此預算適用的支出分類，不選擇任何分類表示適用於所有支出
+              選擇此預算要追蹤的支出分類，不選擇任何分類表示追蹤所有支出
             </p>
           </div>
 
@@ -410,7 +396,6 @@ const form = ref({
 // 分類相關
 const categories = ref<any[]>([])
 const isLoadingCategories = ref(false)
-const allCategoriesSelected = ref(true)
 
 // 期間預算計數器
 const periodBudgetCount = ref(0)
@@ -488,19 +473,6 @@ const handleStartDateChange = () => {
   checkPeriodBudgets()
 }
 
-// 處理全分類選擇切換
-const handleAllCategoriesToggle = () => {
-  if (allCategoriesSelected.value) {
-    form.value.categoryIds = []
-  }
-}
-
-// 監聽分類選擇變化
-watch(() => form.value.categoryIds, (newIds) => {
-  if (newIds.length > 0) {
-    allCategoriesSelected.value = false
-  }
-})
 
 // 處理表單提交
 const handleSubmit = async () => {
@@ -512,7 +484,7 @@ const handleSubmit = async () => {
       description: form.value.description.trim() || undefined,
       amount: Number(form.value.amount),
       currency: form.value.currency,
-      categoryIds: allCategoriesSelected.value ? [] : form.value.categoryIds,
+      categoryIds: form.value.categoryIds,
       periodType: form.value.periodType,
       startDate: form.value.startDate,
       endDate: form.value.endDate || undefined,
