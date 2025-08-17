@@ -17,81 +17,230 @@
         </div>
       </div>
 
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <!-- Total Balance -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-          <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl mb-4">
-            <svg
-              class="w-6 h-6 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-              />
-            </svg>
+      <!-- Stats Cards - Modern Scrollable Layout -->
+      <div class="mb-8">
+        <!-- Desktop Layout -->
+        <div class="hidden md:grid grid-cols-3 gap-6">
+          <!-- Total Balance -->
+          <div class="group bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl p-8 text-white relative overflow-hidden hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
+            <div class="relative z-10">
+              <div class="flex items-center justify-between mb-6">
+                <div class="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+                  <svg
+                    class="w-8 h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                    />
+                  </svg>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-blue-100 uppercase tracking-wide">
+                    總餘額
+                  </div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <h3 class="text-4xl font-bold">
+                  ${{ stats?.netAmount?.toFixed(2) || '0.00' }}
+                </h3>
+                <p class="text-blue-100 text-sm">
+                  當前可用資金
+                </p>
+              </div>
+            </div>
           </div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-1">
-            ${{ stats?.netAmount?.toFixed(2) || '0.00' }}
-          </h3>
-          <p class="text-sm text-gray-500">
-            總餘額
-          </p>
+
+          <!-- This Month Income -->
+          <div class="group bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl p-8 text-white relative overflow-hidden hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
+            <div class="relative z-10">
+              <div class="flex items-center justify-between mb-6">
+                <div class="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+                  <svg
+                    class="w-8 h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M7 11l5-5m0 0l5 5m-5-5v12"
+                    />
+                  </svg>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-green-100 uppercase tracking-wide">
+                    本月收入
+                  </div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <h3 class="text-4xl font-bold">
+                  ${{ stats?.totalIncome?.toFixed(2) || '0.00' }}
+                </h3>
+                <p class="text-green-100 text-sm">
+                  {{ new Date().toLocaleDateString('zh-TW', { month: 'long' }) }}進帳
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- This Month Expenses -->
+          <div class="group bg-gradient-to-br from-red-500 to-rose-600 rounded-3xl p-8 text-white relative overflow-hidden hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
+            <div class="relative z-10">
+              <div class="flex items-center justify-between mb-6">
+                <div class="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+                  <svg
+                    class="w-8 h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17 13l-5 5m0 0l-5-5m5 5V6"
+                    />
+                  </svg>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-red-100 uppercase tracking-wide">
+                    本月支出
+                  </div>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <h3 class="text-4xl font-bold">
+                  ${{ stats?.totalExpense?.toFixed(2) || '0.00' }}
+                </h3>
+                <p class="text-red-100 text-sm">
+                  {{ new Date().toLocaleDateString('zh-TW', { month: 'long' }) }}花費
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- This Month Income -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-          <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl mb-4">
-            <svg
-              class="w-6 h-6 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M7 11l5-5m0 0l5 5m-5-5v12"
-              />
-            </svg>
-          </div>
-          <h3 class="text-2xl font-bold text-green-600 mb-1">
-            ${{ stats?.totalIncome?.toFixed(2) || '0.00' }}
-          </h3>
-          <p class="text-sm text-gray-500">
-            本月收入
-          </p>
-        </div>
+        <!-- Mobile Layout - Horizontal Scroll -->
+        <div class="md:hidden">
+          <div class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 px-4 -mx-4">
+            <!-- Total Balance Mobile -->
+            <div class="flex-shrink-0 w-80 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl p-6 text-white relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-12 translate-x-12" />
+              <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <svg
+                      class="w-6 h-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                      />
+                    </svg>
+                  </div>
+                  <div class="text-xs text-blue-100 uppercase tracking-wide">
+                    總餘額
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <h3 class="text-3xl font-bold">
+                    ${{ stats?.netAmount?.toFixed(2) || '0.00' }}
+                  </h3>
+                  <p class="text-blue-100 text-sm">
+                    當前可用資金
+                  </p>
+                </div>
+              </div>
+            </div>
 
-        <!-- This Month Expenses -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-          <div class="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl mb-4">
-            <svg
-              class="w-6 h-6 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 13l-5 5m0 0l-5-5m5 5V6"
-              />
-            </svg>
+            <!-- This Month Income Mobile -->
+            <div class="flex-shrink-0 w-80 bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl p-6 text-white relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-12 translate-x-12" />
+              <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <svg
+                      class="w-6 h-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M7 11l5-5m0 0l5 5m-5-5v12"
+                      />
+                    </svg>
+                  </div>
+                  <div class="text-xs text-green-100 uppercase tracking-wide">
+                    本月收入
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <h3 class="text-3xl font-bold">
+                    ${{ stats?.totalIncome?.toFixed(2) || '0.00' }}
+                  </h3>
+                  <p class="text-green-100 text-sm">
+                    {{ new Date().toLocaleDateString('zh-TW', { month: 'long' }) }}進帳
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- This Month Expenses Mobile -->
+            <div class="flex-shrink-0 w-80 bg-gradient-to-br from-red-500 to-rose-600 rounded-3xl p-6 text-white relative overflow-hidden">
+              <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-12 translate-x-12" />
+              <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <svg
+                      class="w-6 h-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M17 13l-5 5m0 0l-5-5m5 5V6"
+                      />
+                    </svg>
+                  </div>
+                  <div class="text-xs text-red-100 uppercase tracking-wide">
+                    本月支出
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <h3 class="text-3xl font-bold">
+                    ${{ stats?.totalExpense?.toFixed(2) || '0.00' }}
+                  </h3>
+                  <p class="text-red-100 text-sm">
+                    {{ new Date().toLocaleDateString('zh-TW', { month: 'long' }) }}花費
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
-          <h3 class="text-2xl font-bold text-red-600 mb-1">
-            ${{ stats?.totalExpense?.toFixed(2) || '0.00' }}
-          </h3>
-          <p class="text-sm text-gray-500">
-            本月支出
-          </p>
         </div>
       </div>
 
@@ -392,3 +541,20 @@ useHead({
   ],
 })
 </script>
+
+<style scoped>
+/* 隱藏滾動條但保持可滾動功能 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* 為移動端滑動添加平滑滾動 */
+.overflow-x-auto {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+</style>

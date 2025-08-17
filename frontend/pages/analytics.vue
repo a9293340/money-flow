@@ -454,10 +454,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, onUnmounted } from 'vue'
-import { Chart, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, type ChartConfiguration } from 'chart.js'
+import { Chart, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, LineController, type ChartConfiguration } from 'chart.js'
 
 // 註冊 Chart.js 組件
-Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
+Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, LineController)
 
 // 類型定義
 interface MonthlyTrend {

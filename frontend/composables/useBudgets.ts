@@ -200,7 +200,7 @@ export function useBudgets() {
       })
 
       // 重新獲取預算列表
-      await fetchBudgets()
+      await fetchBudgets({ page: 1 })
 
       return response
     }
@@ -228,7 +228,7 @@ export function useBudgets() {
       }
 
       // 重新獲取預算列表
-      await fetchBudgets()
+      await fetchBudgets({ page: 1 })
 
       return response
     }
@@ -258,7 +258,7 @@ export function useBudgets() {
       }
 
       // 重新獲取預算列表以更新統計
-      await fetchBudgets()
+      await fetchBudgets({ page: 1 })
 
       return { success: true }
     }
@@ -284,7 +284,7 @@ export function useBudgets() {
       }
 
       // 重新獲取預算列表
-      await fetchBudgets()
+      await fetchBudgets({ page: 1 })
 
       return response
     }
