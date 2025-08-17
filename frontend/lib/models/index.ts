@@ -7,6 +7,14 @@
 export { User, type IUser } from './user'
 export { Category, type ICategory, type CategoryType } from './category'
 export { Record, type IRecord, type RecordType, type RecordSource } from './record'
+export {
+  Budget,
+  type IBudget,
+  BudgetPeriodType,
+  BudgetStatus,
+  BudgetWarningLevel,
+  BudgetUtils,
+} from './budget'
 
 // 匯出 MongoDB 連接管理
 export {

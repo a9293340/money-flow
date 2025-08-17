@@ -3,6 +3,8 @@
  * 用於需要用戶認證的 API 端點
  */
 
+import { createError } from 'h3'
+
 export default function ensureUserContext(event: any) {
   const userContext = event.context.userContext
 

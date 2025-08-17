@@ -95,8 +95,13 @@
         </div>
       </div>
 
+      <!-- Budget Overview -->
+      <div class="mb-8">
+        <BudgetOverview :stats="budgetStats" />
+      </div>
+
       <!-- Quick Actions -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <!-- Add Record Card -->
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -184,6 +189,50 @@
             </svg>
           </NuxtLink>
         </div>
+
+        <!-- Budgets Card -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+              <svg
+                class="w-5 h-5 text-orange-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            預算管理
+          </h3>
+          <p class="text-gray-600 mb-4">
+            設定和追蹤您的預算規劃
+          </p>
+          <NuxtLink
+            to="/budgets"
+            class="inline-flex items-center px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            管理預算
+            <svg
+              class="w-4 h-4 ml-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </NuxtLink>
+        </div>
       </div>
 
       <!-- Category Pie Chart Statistics -->
@@ -239,11 +288,13 @@ const user = ref<any>(null)
 const userError = ref('')
 const loading = ref(false)
 const stats = ref<any>(null)
+const budgetStats = ref<any>(null)
 
 // 頁面載入時獲取用戶資料
 onMounted(() => {
   loadUser()
   loadStats()
+  loadBudgetStats()
 })
 
 // 載入使用者資訊
@@ -304,6 +355,24 @@ async function loadStats() {
   }
   catch (error) {
     console.error('載入統計失敗:', error)
+  }
+}
+
+// 載入預算統計數據
+async function loadBudgetStats() {
+  try {
+    const response = await authenticatedFetch<{
+      success: boolean
+      data?: any
+    }>('/api/budgets/stats')
+
+    if (response.success && response.data) {
+      budgetStats.value = response.data
+    }
+  }
+  catch (error) {
+    console.error('載入預算統計失敗:', error)
+    // 如果沒有預算或載入失敗，保持 budgetStats 為 null，會顯示建立預算的提示
   }
 }
 

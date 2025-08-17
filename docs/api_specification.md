@@ -311,6 +311,168 @@ Content-Disposition: attachment; filename="import_template_records.csv"
 
 ## Phase 2+ API Endpoints (P2/P3) - 未來擴展規劃
 
+### 9. 預算管理 (Budgets) - P3 ✅
+
+#### 基本 CRUD 操作
+```
+POST   /api/budgets                    # 創建新預算
+GET    /api/budgets                    # 取得預算列表 (支援分頁、篩選、排序)
+GET    /api/budgets/:id                # 取得單一預算詳情
+PUT    /api/budgets/:id                # 更新預算
+DELETE /api/budgets/:id                # 刪除預算 (軟刪除)
+```
+
+#### 統計和管理
+```
+GET    /api/budgets/stats              # 取得預算統計概覽
+POST   /api/budgets/:id/recalculate    # 重新計算預算統計
+```
+
+#### 預算創建 API 詳細規格
+
+**POST** `/api/budgets`
+
+**Headers:**
+- `Authorization: Bearer <token>`
+- `Content-Type: application/json`
+
+**Request Body:**
+```json
+{
+  "name": "2025年8月生活費預算",
+  "description": "當前月份的生活開支預算",
+  "amount": 25000,
+  "currency": "TWD",
+  "categoryIds": [],
+  "periodType": "monthly",
+  "startDate": "2025-08-01",
+  "endDate": "2025-08-31",
+  "warningThreshold": 75,
+  "isActive": true
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "68a1943602a935e9abdb6abd",
+    "userId": "689f36ca5d85b4217fb85d66",
+    "name": "2025年8月生活費預算",
+    "description": "當前月份的生活開支預算",
+    "amount": 25000,
+    "currency": "TWD",
+    "categoryIds": [],
+    "periodType": "monthly",
+    "startDate": "2025-08-01T00:00:00.000Z",
+    "endDate": "2025-08-30T16:00:00.000Z",
+    "status": "active",
+    "currentSpent": 0,
+    "usagePercentage": 0,
+    "remainingAmount": 25000,
+    "remainingDays": 14,
+    "warningLevel": "safe",
+    "isActive": true,
+    "createdAt": "2025-08-17T08:35:02.208Z",
+    "updatedAt": "2025-08-17T08:35:02.208Z"
+  },
+  "message": "預算創建成功"
+}
+```
+
+#### 預算列表 API 詳細規格
+
+**GET** `/api/budgets`
+
+**Query Parameters:**
+- `page` (number): 頁碼，預設 1
+- `limit` (number): 每頁數量，預設 10，最大 100
+- `status` (string): 預算狀態篩選 (`active`, `inactive`, `completed`, `exceeded`)
+- `periodType` (string): 週期類型篩選 (`monthly`, `quarterly`, `yearly`)
+- `categoryId` (string): 分類篩選
+- `search` (string): 搜尋關鍵字
+- `sortBy` (string): 排序欄位 (`createdAt`, `updatedAt`, `startDate`, `endDate`, `amount`, `usagePercentage`)
+- `sortOrder` (string): 排序方向 (`asc`, `desc`)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "_id": "68a1943602a935e9abdb6abd",
+        "name": "2025年8月生活費預算",
+        "amount": 25000,
+        "currentSpent": 1098,
+        "usagePercentage": 4,
+        "status": "active",
+        "warningLevel": "safe",
+        "remainingDays": 14
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 1,
+      "pages": 1
+    },
+    "summary": {
+      "totalBudgets": 1,
+      "activeBudgets": 1,
+      "warningBudgets": 0,
+      "exceededBudgets": 0,
+      "totalAmount": 25000,
+      "totalSpent": 1098
+    }
+  }
+}
+```
+
+#### 預算統計 API 詳細規格
+
+**GET** `/api/budgets/stats`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "overview": {
+      "totalBudgets": 2,
+      "activeBudgets": 1,
+      "completedBudgets": 1,
+      "totalAmount": 58000,
+      "totalSpent": 1098,
+      "avgUsageRate": 1.89
+    },
+    "warnings": {
+      "exceededBudgets": 0,
+      "dangerBudgets": 0,
+      "warningBudgets": 0,
+      "safeBudgets": 1
+    },
+    "currentMonth": {
+      "budgetCount": 1,
+      "totalAmount": 28000,
+      "totalSpent": 1098,
+      "usageRate": 3.92
+    },
+    "topSpendingBudgets": [
+      {
+        "id": "68a1943602a935e9abdb6abd",
+        "name": "2025年8月生活費預算",
+        "amount": 28000,
+        "spent": 1098,
+        "usageRate": 4,
+        "warningLevel": "safe"
+      }
+    ]
+  }
+}
+```
+
 ### 協作功能 API 架構規劃
 
 #### 10. 工作空間管理 (Workspaces) - P2
