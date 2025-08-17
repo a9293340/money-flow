@@ -299,7 +299,7 @@
 <script setup lang="ts">
 definePageMeta({
   title: '新增預算',
-  requiresAuth: true,
+  auth: true,
 })
 
 const { createBudget, isSubmitting } = useBudgets()

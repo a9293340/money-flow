@@ -534,7 +534,7 @@
 <script setup lang="ts">
 definePageMeta({
   title: '預算詳情',
-  requiresAuth: true,
+  auth: true,
 })
 
 const route = useRoute()

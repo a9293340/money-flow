@@ -366,7 +366,7 @@
 <script setup lang="ts">
 definePageMeta({
   title: '預算管理',
-  requiresAuth: true,
+  auth: true,
 })
 
 const {
