@@ -389,6 +389,26 @@ export function useBudgets() {
     }
   }
 
+  // 獲取指定期間的預算數量
+  const checkPeriodBudgetCount = async (periodType: 'monthly' | 'quarterly' | 'yearly', startDate: string, endDate?: string) => {
+    try {
+      const params = new URLSearchParams()
+      params.append('periodType', periodType)
+      params.append('startDate', startDate)
+      if (endDate) {
+        params.append('endDate', endDate)
+      }
+      params.append('countOnly', 'true')
+
+      const response = await $fetch(`/api/budgets/check-period?${params}`)
+      return response.data?.count || 0
+    }
+    catch (error) {
+      console.error('檢查期間預算數量失敗:', error)
+      return 0
+    }
+  }
+
   return {
     // 狀態
     budgets: readonly(budgets),
@@ -414,6 +434,7 @@ export function useBudgets() {
     formatPeriodType,
     formatStatus,
     formatWarningLevel,
+    checkPeriodBudgetCount,
   }
 }
 

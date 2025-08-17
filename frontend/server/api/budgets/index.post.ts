@@ -99,30 +99,20 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
       }
     }
 
-    // 檢查是否存在重複的預算
-    const existingBudget = await Budget.findOne({
+    // 檢查同一期間的預算數量限制（最多3筆）
+    const existingBudgetsCount = await Budget.countDocuments({
       userId: (user as any)._id.toString(),
       isDeleted: false,
-      status: { $in: [BudgetStatus.ACTIVE] },
+      status: { $in: [BudgetStatus.ACTIVE, BudgetStatus.INACTIVE] },
       periodType: validatedData.periodType,
 
       // 檢查時間重疊
       startDate: { $lte: validatedData.endDate },
       endDate: { $gte: validatedData.startDate },
-
-      // 檢查分類重疊
-      $or: validatedData.categoryIds.length === 0
-        ? [
-            { categoryIds: { $size: 0 } }, // 都是全分類預算
-          ]
-        : [
-            { categoryIds: { $size: 0 } }, // 已存在全分類預算
-            { categoryIds: { $in: validatedData.categoryIds } }, // 分類有重疊
-          ],
     })
 
-    if (existingBudget) {
-      throw new Error('已存在相同期間和分類的預算')
+    if (existingBudgetsCount >= 3) {
+      throw new Error('同一期間最多只能創建3筆預算')
     }
 
     // 創建預算資料

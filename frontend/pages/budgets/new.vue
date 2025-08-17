@@ -154,6 +154,72 @@
             </div>
           </div>
 
+          <!-- 期間預算計數器 -->
+          <div
+            v-if="form.startDate && form.periodType"
+            class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="p-2 bg-blue-100 rounded-lg">
+                  <svg
+                    class="w-5 h-5 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-medium text-blue-900">
+                    期間預算計數
+                  </h4>
+                  <p class="text-xs text-blue-600">
+                    {{ formatPeriodType(form.periodType) }}期間已有預算
+                  </p>
+                </div>
+              </div>
+              
+              <div class="text-right">
+                <div class="flex items-center gap-2">
+                  <span
+                    v-if="isCheckingPeriod"
+                    class="text-sm text-blue-600"
+                  >
+                    檢查中...
+                  </span>
+                  <div
+                    v-else
+                    class="flex items-center gap-1"
+                  >
+                    <span class="text-2xl font-bold text-blue-900">
+                      {{ periodBudgetCount }}
+                    </span>
+                    <span class="text-sm text-blue-600">
+                      / {{ maxBudgetsPerPeriod }}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  v-if="!isCheckingPeriod"
+                  class="text-xs mt-1"
+                  :class="{
+                    'text-green-600': periodBudgetCount < maxBudgetsPerPeriod,
+                    'text-red-600': periodBudgetCount >= maxBudgetsPerPeriod,
+                  }"
+                >
+                  {{ periodBudgetCount >= maxBudgetsPerPeriod ? '已達上限' : `還可創建 ${maxBudgetsPerPeriod - periodBudgetCount} 筆` }}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 分類選擇 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -286,9 +352,32 @@
               type="submit"
               :disabled="isSubmitting || !isFormValid"
               class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              :title="periodBudgetCount >= maxBudgetsPerPeriod ? '此期間已達預算上限（3筆）' : ''"
             >
-              {{ isSubmitting ? '建立中...' : '建立預算' }}
+              {{ isSubmitting ? '建立中...' : 
+                  periodBudgetCount >= maxBudgetsPerPeriod ? '已達期間上限' : '建立預算' }}
             </button>
+            
+            <!-- 上限提示 -->
+            <div
+              v-if="periodBudgetCount >= maxBudgetsPerPeriod && form.startDate"
+              class="mt-2 text-sm text-red-600 flex items-center gap-2"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+              此{{ formatPeriodType(form.periodType) }}期間已達預算數量上限（3筆）
+            </div>
           </div>
         </form>
       </div>
@@ -302,7 +391,7 @@ definePageMeta({
   auth: true,
 })
 
-const { createBudget, isSubmitting } = useBudgets()
+const { createBudget, isSubmitting, checkPeriodBudgetCount, formatPeriodType } = useBudgets()
 
 // 表單資料
 const form = ref({
@@ -323,6 +412,11 @@ const categories = ref<any[]>([])
 const isLoadingCategories = ref(false)
 const allCategoriesSelected = ref(true)
 
+// 期間預算計數器
+const periodBudgetCount = ref(0)
+const maxBudgetsPerPeriod = 3
+const isCheckingPeriod = ref(false)
+
 // 計算屬性
 const expenseCategories = computed(() =>
   categories.value.filter((category: any) => category.type === 'expense'),
@@ -333,13 +427,36 @@ const isFormValid = computed(() => {
     && form.value.amount
     && Number(form.value.amount) > 0
     && form.value.startDate
+    && periodBudgetCount.value < maxBudgetsPerPeriod
 })
+
+// 檢查期間預算數量
+const checkPeriodBudgets = async () => {
+  if (!form.value.startDate || !form.value.periodType) return
+
+  isCheckingPeriod.value = true
+  try {
+    const count = await checkPeriodBudgetCount(
+      form.value.periodType,
+      form.value.startDate,
+      form.value.endDate
+    )
+    periodBudgetCount.value = count
+  } catch (error) {
+    console.error('檢查期間預算數量失敗:', error)
+    periodBudgetCount.value = 0
+  } finally {
+    isCheckingPeriod.value = false
+  }
+}
 
 // 處理期間類型變更
 const handlePeriodTypeChange = () => {
   if (form.value.startDate) {
     handleStartDateChange()
   }
+  // 檢查期間預算數量
+  checkPeriodBudgets()
 }
 
 // 處理開始日期變更
@@ -366,6 +483,9 @@ const handleStartDateChange = () => {
   }
 
   form.value.endDate = endDate.toISOString().split('T')[0]
+  
+  // 檢查期間預算數量
+  checkPeriodBudgets()
 }
 
 // 處理全分類選擇切換
