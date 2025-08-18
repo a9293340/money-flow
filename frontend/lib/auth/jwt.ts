@@ -28,7 +28,7 @@ export interface RefreshTokenPayload {
 // 客戶端平台類型
 export type ClientPlatform = 'web' | 'mobile'
 
-// Token 配置 - 根據平台動態設定
+// Token 配置 - 根據平台動態設定1
 export const getTokenConfig = (platform: ClientPlatform) => {
   if (platform === 'mobile') {
     return {
