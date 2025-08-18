@@ -11,7 +11,6 @@
 import { z } from 'zod'
 import type { BudgetPeriodType } from '~/lib/models'
 import { Budget, BudgetStatus, BudgetUtils, Category } from '~/lib/models'
-import { getBudgetLimitsForUser, UserTier } from '~/lib/config/budget-limits'
 import ensureUserContext from '~/server/utils/ensureUserContext'
 
 // 預算創建請求驗證
@@ -113,7 +112,7 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
       }
     }
 
-    // 檢查同一期間的預算數量限制
+    // 檢查同一期間的預算數量限制（最多5筆）
     const existingBudgetsCount = await Budget.countDocuments({
       userId: (user as any)._id.toString(),
       isDeleted: false,
@@ -125,12 +124,8 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
       endDate: { $gte: validatedData.startDate },
     })
 
-    // 獲取用戶等級和對應限制（目前所有用戶都是免費等級）
-    const userTier = UserTier.FREE // TODO: 從用戶資料中獲取實際等級
-    const limits = getBudgetLimitsForUser(userTier)
-    
-    if (limits.maxBudgetsPerPeriod > 0 && existingBudgetsCount >= limits.maxBudgetsPerPeriod) {
-      throw new Error(`${userTier === UserTier.FREE ? '免費用戶' : '當前用戶'}同一期間最多只能創建${limits.maxBudgetsPerPeriod}筆預算`)
+    if (existingBudgetsCount >= 5) {
+      throw new Error('同一期間最多只能創建5筆預算')
     }
 
     // 創建預算資料
