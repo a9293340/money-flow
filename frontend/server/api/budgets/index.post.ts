@@ -168,42 +168,8 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
     // 計算初始統計 (會觸發 calculateStats 方法)
     budget.calculateStats([])
 
-    // 儲存預算 - 處理可能的索引衝突
-    try {
-      await budget.save()
-    } catch (error: any) {
-      // 如果是重複鍵錯誤，檢查是否為軟刪除記錄造成的衝突
-      if (error.code === 11000) {
-        console.log('⚠️  偵測到重複鍵錯誤，嘗試處理索引衝突...')
-        
-        // 嘗試使用 insertOne 直接插入，繞過可能的 Mongoose 索引問題
-        const mongoose = await import('mongoose')
-        const collection = mongoose.default.connection.collection('budgets')
-        
-        try {
-          const result = await collection.insertOne(budgetData)
-          console.log('✅ 使用直接插入成功創建預算')
-          
-          // 重新從數據庫載入創建的預算
-          const createdBudget = await Budget.findById(result.insertedId)
-          if (!createdBudget) {
-            throw new Error('預算創建後無法載入')
-          }
-          
-          const response: CreateBudgetResponse = {
-            success: true,
-            data: createdBudget.toObject(),
-            message: '預算創建成功',
-          }
-          return response
-          
-        } catch (directInsertError: any) {
-          console.error('❌ 直接插入也失敗:', directInsertError)
-          throw new Error('預算創建失敗，可能存在索引衝突。請聯系管理員處理數據庫索引問題。')
-        }
-      }
-      throw error
-    }
+    // 儲存預算
+    await budget.save()
 
     const response: CreateBudgetResponse = {
       success: true,
