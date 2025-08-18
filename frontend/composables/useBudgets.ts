@@ -156,8 +156,12 @@ export function useBudgets() {
       if (params.sortBy) query.append('sortBy', params.sortBy)
       if (params.sortOrder) query.append('sortOrder', params.sortOrder)
 
-      const response: BudgetListResponse = await $fetch(`/api/budgets?${query.toString()}`)
-      const { data } = response
+      const response = await fetch(`/api/budgets?${query.toString()}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const budgetListResponse: BudgetListResponse = await response.json()
+      const { data } = budgetListResponse
 
       budgets.value = data.items
       pagination.value = data.pagination
@@ -178,9 +182,13 @@ export function useBudgets() {
   const fetchBudget = async (id: string) => {
     isLoading.value = true
     try {
-      const response = await $fetch(`/api/budgets/${id}`) as BudgetDetailResponse
-      currentBudget.value = response.data.budget
-      return response.data
+      const response = await fetch(`/api/budgets/${id}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const budgetDetailResponse: BudgetDetailResponse = await response.json()
+      currentBudget.value = budgetDetailResponse.data.budget
+      return budgetDetailResponse.data
     }
     catch (error) {
       console.error('獲取預算詳情失敗:', error)
@@ -195,15 +203,22 @@ export function useBudgets() {
   const createBudget = async (budgetData: CreateBudgetRequest) => {
     isSubmitting.value = true
     try {
-      const response = await $fetch('/api/budgets', {
+      const response = await fetch('/api/budgets', {
         method: 'POST',
-        body: budgetData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(budgetData),
       })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const createResponse = await response.json()
 
       // 重新獲取預算列表
       await fetchBudgets({ page: 1 })
 
-      return response
+      return createResponse
     }
     catch (error) {
       console.error('創建預算失敗:', error)
@@ -218,20 +233,27 @@ export function useBudgets() {
   const updateBudget = async (id: string, budgetData: Partial<CreateBudgetRequest>) => {
     isSubmitting.value = true
     try {
-      const response: { success: boolean, data: Budget, message?: string } = await $fetch(`/api/budgets/${id}`, {
+      const response = await fetch(`/api/budgets/${id}`, {
         method: 'PUT',
-        body: budgetData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(budgetData),
       })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const updateResponse: { success: boolean, data: Budget, message?: string } = await response.json()
 
       // 更新當前預算
-      if (currentBudget.value && currentBudget.value._id === id && response.data) {
-        currentBudget.value = response.data
+      if (currentBudget.value && currentBudget.value._id === id && updateResponse.data) {
+        currentBudget.value = updateResponse.data
       }
 
       // 重新獲取預算列表
       await fetchBudgets({ page: 1 })
 
-      return response
+      return updateResponse
     }
     catch (error) {
       console.error('更新預算失敗:', error)
@@ -246,9 +268,12 @@ export function useBudgets() {
   const deleteBudget = async (id: string) => {
     isSubmitting.value = true
     try {
-      await $fetch(`/api/budgets/${id}`, {
+      const response = await fetch(`/api/budgets/${id}`, {
         method: 'DELETE',
       })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
 
       // 從列表中移除
       budgets.value = budgets.value.filter(budget => budget._id !== id)
@@ -275,19 +300,23 @@ export function useBudgets() {
   // 重新計算預算統計
   const recalculateBudget = async (id: string) => {
     try {
-      const response: { success: boolean, data: { budget: Budget, changes: any }, message?: string } = await $fetch(`/api/budgets/${id}/recalculate`, {
+      const response = await fetch(`/api/budgets/${id}/recalculate`, {
         method: 'POST',
       })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const recalculateResponse: { success: boolean, data: { budget: Budget, changes: any }, message?: string } = await response.json()
 
       // 更新當前預算
-      if (currentBudget.value && currentBudget.value._id === id && response.data?.budget) {
-        currentBudget.value = response.data.budget
+      if (currentBudget.value && currentBudget.value._id === id && recalculateResponse.data?.budget) {
+        currentBudget.value = recalculateResponse.data.budget
       }
 
       // 重新獲取預算列表
       await fetchBudgets({ page: 1 })
 
-      return response
+      return recalculateResponse
     }
     catch (error) {
       console.error('重新計算預算統計失敗:', error)
@@ -299,9 +328,13 @@ export function useBudgets() {
   const fetchBudgetStats = async () => {
     isLoading.value = true
     try {
-      const response = await $fetch('/api/budgets/stats') as { success: boolean, data: BudgetStats }
-      budgetStats.value = response.data
-      return response.data
+      const response = await fetch('/api/budgets/stats')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const statsResponse: { success: boolean, data: BudgetStats } = await response.json()
+      budgetStats.value = statsResponse.data
+      return statsResponse.data
     }
     catch (error) {
       console.error('獲取預算統計失敗:', error)
@@ -401,8 +434,12 @@ export function useBudgets() {
       }
       params.append('countOnly', 'true')
 
-      const response = await $fetch(`/api/budgets/check-period?${params}`) as { success: boolean, data?: { count: number, maxAllowed: number, canCreate: boolean } }
-      return response.data?.count || 0
+      const response = await fetch(`/api/budgets/check-period?${params}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const checkResponse: { success: boolean, data?: { count: number, maxAllowed: number, canCreate: boolean } } = await response.json()
+      return checkResponse.data?.count || 0
     }
     catch (error) {
       console.error('檢查期間預算數量失敗:', error)
