@@ -156,7 +156,8 @@ export function useBudgets() {
       if (params.sortBy) query.append('sortBy', params.sortBy)
       if (params.sortOrder) query.append('sortOrder', params.sortOrder)
 
-      const { data } = await $fetch(`/api/budgets?${query.toString()}`) as BudgetListResponse
+      const response = await $fetch(`/api/budgets?${query.toString()}`) as BudgetListResponse
+      const { data } = response
 
       budgets.value = data.items
       pagination.value = data.pagination
@@ -218,12 +219,12 @@ export function useBudgets() {
     isSubmitting.value = true
     try {
       const response = await $fetch(`/api/budgets/${id}`, {
-        method: 'PUT',
+        method: 'PUT' as const,
         body: budgetData,
       })
 
       // 更新當前預算
-      if (currentBudget.value && currentBudget.value._id === id) {
+      if (currentBudget.value && currentBudget.value._id === id && response.data) {
         currentBudget.value = response.data
       }
 
@@ -246,7 +247,7 @@ export function useBudgets() {
     isSubmitting.value = true
     try {
       await $fetch(`/api/budgets/${id}`, {
-        method: 'DELETE',
+        method: 'DELETE' as const,
       })
 
       // 從列表中移除
@@ -275,11 +276,11 @@ export function useBudgets() {
   const recalculateBudget = async (id: string) => {
     try {
       const response = await $fetch(`/api/budgets/${id}/recalculate`, {
-        method: 'POST',
-      })
+        method: 'POST' as const,
+      }) as { success: boolean, data: { budget: Budget, changes: any }, message?: string }
 
       // 更新當前預算
-      if (currentBudget.value && currentBudget.value._id === id) {
+      if (currentBudget.value && currentBudget.value._id === id && response.data?.budget) {
         currentBudget.value = response.data.budget
       }
 
@@ -400,7 +401,7 @@ export function useBudgets() {
       }
       params.append('countOnly', 'true')
 
-      const response = await $fetch(`/api/budgets/check-period?${params}`)
+      const response = await $fetch(`/api/budgets/check-period?${params}`) as { success: boolean, data?: { count: number, maxAllowed: number, canCreate: boolean } }
       return response.data?.count || 0
     }
     catch (error) {
