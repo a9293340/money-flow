@@ -88,14 +88,30 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
 
     // 驗證分類ID有效性
     if (validatedData.categoryIds.length > 0) {
-      const validCategories = await Category.find({
-        _id: { $in: validatedData.categoryIds },
-        userId: (user as any)._id.toString(),
-        isDeleted: false,
+      // 轉換字符串ID為ObjectId
+      const categoryObjectIds = validatedData.categoryIds.map(id => {
+        const mongoose = require('mongoose')
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+          throw new Error(`無效的分類ID格式: ${id}`)
+        }
+        return new mongoose.Types.ObjectId(id)
       })
 
+      const validCategories = await Category.find({
+        _id: { $in: categoryObjectIds },
+        userId: (user as any)._id.toString(),
+        isDeleted: false,
+        type: 'expense', // 只允許支出分類
+      })
+
+      console.log(`驗證分類ID: 提供=${validatedData.categoryIds.length}, 找到=${validCategories.length}`)
+      console.log('提供的分類ID:', validatedData.categoryIds)
+      console.log('找到的有效分類:', validCategories.map(c => ({ id: c._id.toString(), name: c.name, type: c.type })))
+
       if (validCategories.length !== validatedData.categoryIds.length) {
-        throw new Error('包含無效的分類ID')
+        const foundIds = validCategories.map(c => c._id.toString())
+        const invalidIds = validatedData.categoryIds.filter(id => !foundIds.includes(id))
+        throw new Error(`包含無效的分類ID: ${invalidIds.join(', ')}`)
       }
     }
 
@@ -129,6 +145,7 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
       warningThreshold: validatedData.warningThreshold,
       status: validatedData.isActive ? BudgetStatus.ACTIVE : BudgetStatus.INACTIVE,
       isActive: validatedData.isActive,
+      isDeleted: false, // 確保設置刪除標記
       context: 'personal' as const,
 
       // 初始統計值
