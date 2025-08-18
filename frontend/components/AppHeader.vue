@@ -284,6 +284,11 @@ const menuItems = [
     icon: 'records',
   },
   {
+    name: '預算管理',
+    path: '/budgets',
+    icon: 'budgets',
+  },
+  {
     name: '分類設定',
     path: '/categories',
     icon: 'categories',
@@ -299,6 +304,7 @@ const menuItems = [
 const iconMap: Record<string, string> = {
   dashboard: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2zM8 5a2 2 0 012-2h2a2 2 0 012 2v6H8V5z',
   records: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+  budgets: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z',
   categories: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z',
   analytics: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
 }
@@ -320,7 +326,15 @@ const toggleUserMenu = () => {
 
 const handleLogout = async () => {
   try {
-    await $fetch('/api/auth/logout', { method: 'POST' })
+    const response = await fetch('/api/auth/logout', { 
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
     await navigateTo('/login')
   }
   catch (error) {

@@ -99,7 +99,7 @@
               </button>
               <button
                 class="inline-flex items-center px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-                @click="isEditMode = true"
+                @click="handleEditMode"
               >
                 <svg
                   class="w-4 h-4 mr-2"
@@ -430,7 +430,7 @@
 
                 <button
                   class="w-full inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-                  @click="isEditMode = true"
+                  @click="handleEditMode"
                 >
                   <svg
                     class="w-4 h-4 mr-2"
@@ -506,26 +506,245 @@
       </NuxtLink>
     </div>
 
-    <!-- 編輯模式彈窗 (簡化版，可後續擴展為完整編輯表單) -->
+    <!-- 編輯模式彈窗 -->
     <div
       v-if="isEditMode"
       class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      @click.self="isEditMode = false"
     >
-      <div class="bg-white rounded-lg max-w-md w-full p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">
-          編輯預算
-        </h3>
-        <p class="text-gray-600 mb-6">
-          完整的編輯功能將在後續版本中提供，目前您可以刪除後重新建立預算。
-        </p>
-        <div class="flex justify-end space-x-3">
-          <button
-            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
-            @click="isEditMode = false"
-          >
-            關閉
-          </button>
+      <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b px-6 py-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">
+              編輯預算
+            </h3>
+            <button
+              class="text-gray-400 hover:text-gray-600"
+              @click="isEditMode = false"
+            >
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
+
+        <form
+          class="p-6 space-y-6"
+          @submit.prevent="handleUpdateBudget"
+        >
+          <!-- 基本資訊 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 預算名稱 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                預算名稱 <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="editForm.name"
+                type="text"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="例如：2025年8月生活費預算"
+                maxlength="100"
+              >
+              <p class="text-xs text-gray-500 mt-1">
+                {{ editForm.name.length }}/100
+              </p>
+            </div>
+
+            <!-- 預算金額 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                預算金額 <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-gray-500">$</span>
+                <input
+                  v-model="editForm.amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="99999999"
+                  required
+                  class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0.00"
+                >
+              </div>
+              <p
+                v-if="budgetDetail.budget.currentSpent > editForm.amount"
+                class="text-xs text-red-600 mt-1"
+              >
+                警告：預算金額不能小於已花費金額 ${{ budgetDetail.budget.currentSpent.toFixed(2) }}
+              </p>
+            </div>
+          </div>
+
+          <!-- 描述 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              預算描述
+            </label>
+            <textarea
+              v-model="editForm.description"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="預算的詳細說明（選填）"
+              maxlength="500"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              {{ (editForm.description || '').length }}/500
+            </p>
+          </div>
+
+          <!-- 期間設定 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 開始日期 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                開始日期 <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="editForm.startDate"
+                type="date"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+            </div>
+
+            <!-- 結束日期 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                結束日期 <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="editForm.endDate"
+                type="date"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+            </div>
+          </div>
+
+          <!-- 分類選擇 -->
+          <div v-if="availableCategories.length > 0">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              適用分類（可選）
+            </label>
+            <div class="border border-gray-300 rounded-md p-3">
+              <div class="space-y-2 max-h-32 overflow-y-auto">
+                <div
+                  v-for="category in availableCategories"
+                  :key="category._id"
+                  class="flex items-center"
+                >
+                  <input
+                    v-model="editForm.categoryIds"
+                    :value="category._id"
+                    type="checkbox"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  >
+                  <label class="ml-2 text-sm text-gray-700 flex items-center">
+                    <span class="mr-2">{{ category.icon }}</span>
+                    {{ category.name }}
+                  </label>
+                </div>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+              選擇此預算要追蹤的支出分類，不選擇任何分類表示追蹤所有支出
+            </p>
+          </div>
+
+          <!-- 進階設定 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 警告閾值 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                警告閾值 (%)
+              </label>
+              <input
+                v-model.number="editForm.warningThreshold"
+                type="number"
+                min="0"
+                max="100"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+              <p class="text-xs text-gray-500 mt-1">
+                當支出達到預算的百分比時發出警告，預設為 80%
+              </p>
+            </div>
+
+            <!-- 幣別 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                幣別
+              </label>
+              <select
+                v-model="editForm.currency"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="TWD">
+                  TWD (新台幣)
+                </option>
+                <option value="USD">
+                  USD (美金)
+                </option>
+                <option value="EUR">
+                  EUR (歐元)
+                </option>
+                <option value="JPY">
+                  JPY (日圓)
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 狀態設定 -->
+          <div>
+            <div class="flex items-center">
+              <input
+                v-model="editForm.isActive"
+                type="checkbox"
+                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              >
+              <label class="ml-2 text-sm text-gray-700">
+                啟用此預算
+              </label>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+              取消勾選將暫停此預算，不會計入支出統計
+            </p>
+          </div>
+
+          <!-- 表單按鈕 -->
+          <div class="flex justify-end space-x-3 pt-6 border-t">
+            <button
+              type="button"
+              class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+              @click="isEditMode = false"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              :disabled="isSubmitting || !isEditFormValid"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {{ isSubmitting ? '更新中...' : '更新預算' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -543,6 +762,7 @@ const budgetId = route.params.id as string
 const {
   fetchBudget,
   deleteBudget,
+  updateBudget,
   recalculateBudget,
   isLoading,
   isSubmitting,
@@ -556,15 +776,107 @@ const {
 // 預算詳情資料
 const budgetDetail = ref<any>(null)
 const isEditMode = ref(false)
+const availableCategories = ref<any[]>([])
+
+// 編輯表單資料
+const editForm = ref({
+  name: '',
+  description: '',
+  amount: 0,
+  currency: 'TWD',
+  categoryIds: [] as string[],
+  startDate: '',
+  endDate: '',
+  warningThreshold: 80,
+  isActive: true,
+})
+
+// 編輯表單驗證
+const isEditFormValid = computed(() => {
+  return editForm.value.name.trim()
+    && editForm.value.amount > 0
+    && editForm.value.startDate
+    && editForm.value.endDate
+    && new Date(editForm.value.startDate) < new Date(editForm.value.endDate)
+    && editForm.value.amount >= (budgetDetail.value?.budget?.currentSpent || 0)
+})
 
 // 載入預算詳情
 const loadBudgetDetail = async () => {
   try {
     budgetDetail.value = await fetchBudget(budgetId)
+    // 同時載入分類資料以供編輯使用
+    await loadCategories()
   }
   catch (error) {
     console.error('載入預算詳情失敗:', error)
     budgetDetail.value = null
+  }
+}
+
+// 載入分類資料
+const loadCategories = async () => {
+  try {
+    const response = await fetch('/api/categories')
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const categoriesResponse = await response.json()
+    availableCategories.value = categoriesResponse.data.items.filter((category: any) => category.type === 'expense') || []
+  }
+  catch (error) {
+    console.error('載入分類失敗:', error)
+  }
+}
+
+// 初始化編輯表單
+const initEditForm = () => {
+  if (!budgetDetail.value?.budget) return
+
+  const budget = budgetDetail.value.budget
+  editForm.value = {
+    name: budget.name,
+    description: budget.description || '',
+    amount: budget.amount,
+    currency: budget.currency,
+    categoryIds: [...budget.categoryIds],
+    startDate: budget.startDate.split('T')[0], // 轉換為 YYYY-MM-DD 格式
+    endDate: budget.endDate.split('T')[0],
+    warningThreshold: budget.warningThreshold,
+    isActive: budget.isActive,
+  }
+}
+
+// 處理編輯模式
+const handleEditMode = () => {
+  initEditForm()
+  isEditMode.value = true
+}
+
+// 更新預算
+const handleUpdateBudget = async () => {
+  if (!isEditFormValid.value) return
+
+  try {
+    await updateBudget(budgetId, {
+      name: editForm.value.name.trim(),
+      description: editForm.value.description.trim() || undefined,
+      amount: Number(editForm.value.amount),
+      currency: editForm.value.currency,
+      categoryIds: editForm.value.categoryIds,
+      startDate: editForm.value.startDate,
+      endDate: editForm.value.endDate,
+      warningThreshold: editForm.value.warningThreshold,
+      isActive: editForm.value.isActive,
+    })
+
+    // 關閉編輯模式並重新載入詳情
+    isEditMode.value = false
+    await loadBudgetDetail()
+  }
+  catch (error) {
+    console.error('更新預算失敗:', error)
+    alert('更新失敗，請檢查輸入資料後重試')
   }
 }
 
