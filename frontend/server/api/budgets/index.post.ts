@@ -89,12 +89,12 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
     // 驗證分類ID有效性
     if (validatedData.categoryIds.length > 0) {
       // 轉換字符串ID為ObjectId
+      const mongoose = await import('mongoose')
       const categoryObjectIds = validatedData.categoryIds.map(id => {
-        const mongoose = require('mongoose')
-        if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (!mongoose.default.Types.ObjectId.isValid(id)) {
           throw new Error(`無效的分類ID格式: ${id}`)
         }
-        return new mongoose.Types.ObjectId(id)
+        return new mongoose.default.Types.ObjectId(id)
       })
 
       const validCategories = await Category.find({
