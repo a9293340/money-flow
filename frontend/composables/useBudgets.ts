@@ -156,7 +156,7 @@ export function useBudgets() {
       if (params.sortBy) query.append('sortBy', params.sortBy)
       if (params.sortOrder) query.append('sortOrder', params.sortOrder)
 
-      const response = await $fetch(`/api/budgets?${query.toString()}`) as BudgetListResponse
+      const response: BudgetListResponse = await $fetch(`/api/budgets?${query.toString()}`)
       const { data } = response
 
       budgets.value = data.items
@@ -218,8 +218,8 @@ export function useBudgets() {
   const updateBudget = async (id: string, budgetData: Partial<CreateBudgetRequest>) => {
     isSubmitting.value = true
     try {
-      const response = await $fetch(`/api/budgets/${id}`, {
-        method: 'PUT' as const,
+      const response: { success: boolean, data: Budget, message?: string } = await $fetch(`/api/budgets/${id}`, {
+        method: 'PUT',
         body: budgetData,
       })
 
@@ -247,7 +247,7 @@ export function useBudgets() {
     isSubmitting.value = true
     try {
       await $fetch(`/api/budgets/${id}`, {
-        method: 'DELETE' as const,
+        method: 'DELETE',
       })
 
       // 從列表中移除
@@ -275,9 +275,9 @@ export function useBudgets() {
   // 重新計算預算統計
   const recalculateBudget = async (id: string) => {
     try {
-      const response = await $fetch(`/api/budgets/${id}/recalculate`, {
-        method: 'POST' as const,
-      }) as { success: boolean, data: { budget: Budget, changes: any }, message?: string }
+      const response: { success: boolean, data: { budget: Budget, changes: any }, message?: string } = await $fetch(`/api/budgets/${id}/recalculate`, {
+        method: 'POST',
+      })
 
       // 更新當前預算
       if (currentBudget.value && currentBudget.value._id === id && response.data?.budget) {
