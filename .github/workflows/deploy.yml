@@ -34,7 +34,7 @@ env:
   CLOUD_RUN_SERVICE: ${{ secrets.CLOUD_RUN_SERVICE }}
 
   # Node.js 版本
-  NODE_VERSION: ${{ vars.NODE_VERSION }}
+  NODE_VERSION: 22.12.0
 
   # 應用程式 URL（支援自定義域名）
   SERVICE_URL: ${{ vars.SERVICE_URL }}
@@ -57,7 +57,7 @@ jobs:
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.nvmrc'
           cache: 'yarn'
           cache-dependency-path: 'yarn.lock'
 

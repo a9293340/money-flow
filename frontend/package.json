@@ -5,6 +5,10 @@
   "version": "1.0.0",
   "description": "Personal Finance Manager - Web Application",
   "packageManager": "yarn@1.22.22",
+  "engines": {
+    "node": ">=22.12.0",
+    "yarn": ">=1.22.22"
+  },
   "scripts": {
     "build": "nuxt build",
     "start": "node .output/server/index.mjs",
