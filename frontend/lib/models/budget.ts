@@ -71,6 +71,11 @@ export interface IBudget extends mongoose.Document {
   avgDailySpent: number // 平均每日支出
   projectedTotal: number // 預測總支出
 
+  // 重複預算設定
+  isTemplate: boolean // 是否為重複模板
+  templateFrequency?: 'monthly' | 'quarterly' | 'yearly' // 重複頻率
+  lastGeneratedPeriod?: string // 最後生成的期間標識
+
   // 系統欄位
   isActive: boolean // 是否啟用
   isDeleted: boolean // 軟刪除標記
@@ -230,6 +235,19 @@ const budgetSchema = new mongoose.Schema<IBudget>({
     min: 0,
   },
 
+  // 重複預算設定
+  isTemplate: {
+    type: Boolean,
+    default: false,
+  },
+  templateFrequency: {
+    type: String,
+    enum: ['monthly', 'quarterly', 'yearly'],
+  },
+  lastGeneratedPeriod: {
+    type: String,
+  },
+
   // 系統欄位
   isActive: {
     type: Boolean,
@@ -262,6 +280,8 @@ budgetSchema.index({ userId: 1, status: 1 })
 budgetSchema.index({ userId: 1, startDate: 1, endDate: 1 })
 budgetSchema.index({ userId: 1, categoryIds: 1 })
 budgetSchema.index({ endDate: 1, status: 1 }) // 用於過期預算查詢
+budgetSchema.index({ isTemplate: 1, isActive: 1, isDeleted: 1 }) // 用於模板查詢
+budgetSchema.index({ userId: 1, isTemplate: 1 }) // 用於用戶模板查詢
 
 // 實例方法：計算預算統計
 budgetSchema.methods.calculateStats = function (this: IBudget, _records: any[] = []): void {

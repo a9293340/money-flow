@@ -11,6 +11,7 @@
 import { z } from 'zod'
 import type { BudgetPeriodType } from '~/lib/models'
 import { Budget, BudgetStatus, BudgetUtils, Category } from '~/lib/models'
+import { getCurrentPeriod, type TemplateFrequency } from '~/lib/utils/recurring-budgets'
 import ensureUserContext from '~/server/utils/ensureUserContext'
 
 // 預算創建請求驗證
@@ -55,6 +56,19 @@ const createBudgetSchema = z.object({
     .default(80),
 
   isActive: z.boolean().default(true),
+
+  // 重複預算設定
+  isTemplate: z.boolean().default(false),
+  templateFrequency: z.enum(['monthly', 'quarterly', 'yearly']).optional(),
+}).refine((data) => {
+  // 如果設為模板，必須指定頻率
+  if (data.isTemplate && !data.templateFrequency) {
+    return false
+  }
+  return true
+}, {
+  message: '設為重複模板時必須指定重複頻率',
+  path: ['templateFrequency']
 })
 
 interface CreateBudgetResponse {
@@ -144,6 +158,13 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
       isActive: validatedData.isActive,
       isDeleted: false, // 確保設置刪除標記
       context: 'personal' as const,
+
+      // 重複預算設定
+      isTemplate: validatedData.isTemplate,
+      templateFrequency: validatedData.templateFrequency,
+      lastGeneratedPeriod: validatedData.isTemplate 
+        ? getCurrentPeriod(validatedData.templateFrequency as TemplateFrequency, validatedData.startDate)
+        : undefined,
 
       // 初始統計值
       currentSpent: 0,

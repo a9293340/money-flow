@@ -116,6 +116,10 @@ interface CreateBudgetRequest {
   endDate?: string
   warningThreshold?: number
   isActive?: boolean
+  
+  // 重複預算設定
+  isTemplate?: boolean
+  templateFrequency?: 'monthly' | 'quarterly' | 'yearly'
 }
 
 export function useBudgets() {
@@ -447,6 +451,73 @@ export function useBudgets() {
     }
   }
 
+  // 獲取預算模板列表
+  const fetchBudgetTemplates = async () => {
+    try {
+      const response = await fetch('/api/budgets/templates')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    }
+    catch (error) {
+      console.error('獲取預算模板失敗:', error)
+      throw error
+    }
+  }
+
+  // 切換預算模板狀態
+  const toggleBudgetTemplate = async (id: string, isTemplate: boolean, templateFrequency?: 'monthly' | 'quarterly' | 'yearly') => {
+    try {
+      const response = await fetch(`/api/budgets/${id}/toggle-template`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isTemplate, templateFrequency }),
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const result = await response.json()
+
+      // 重新獲取預算列表
+      await fetchBudgets({ page: 1 })
+
+      return result
+    }
+    catch (error) {
+      console.error('切換模板狀態失敗:', error)
+      throw error
+    }
+  }
+
+  // 手動生成當前期間預算
+  const generateCurrentBudget = async (templateId: string) => {
+    try {
+      const response = await fetch('/api/budgets/templates/generate-current', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ templateId }),
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const result = await response.json()
+
+      // 重新獲取預算列表
+      await fetchBudgets({ page: 1 })
+
+      return result
+    }
+    catch (error) {
+      console.error('生成當前期間預算失敗:', error)
+      throw error
+    }
+  }
+
   return {
     // 狀態
     budgets: readonly(budgets),
@@ -473,6 +544,11 @@ export function useBudgets() {
     formatStatus,
     formatWarningLevel,
     checkPeriodBudgetCount,
+
+    // 模板相關方法
+    fetchBudgetTemplates,
+    toggleBudgetTemplate,
+    generateCurrentBudget,
   }
 }
 
