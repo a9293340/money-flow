@@ -9,7 +9,7 @@ export default defineNuxtRouteMiddleware(async (_to, _from) => {
   // 暫時禁用認證檢查來測試路由
   console.log('Auth middleware: navigating to', _to.path)
   return
-  
+
   // 如果是服務器端渲染，暫時跳過檢查
   if (import.meta.server) {
     return

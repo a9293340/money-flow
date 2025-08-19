@@ -1,7 +1,7 @@
 /**
  * API: 檢查指定期間的預算數量
  * 路由: GET /api/budgets/check-period
- * 
+ *
  * 查詢參數:
  * - periodType: 期間類型 (monthly, quarterly, yearly)
  * - startDate: 開始日期
@@ -77,7 +77,7 @@ export default defineEventHandler(async (event): Promise<CheckPeriodResponse> =>
     if (validatedQuery.countOnly) {
       // 只返回數量
       const count = await Budget.countDocuments(query_conditions)
-      
+
       return {
         success: true,
         data: {

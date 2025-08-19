@@ -68,7 +68,7 @@ const createBudgetSchema = z.object({
   return true
 }, {
   message: '設為重複模板時必須指定重複頻率',
-  path: ['templateFrequency']
+  path: ['templateFrequency'],
 })
 
 interface CreateBudgetResponse {
@@ -104,7 +104,7 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
     if (validatedData.categoryIds.length > 0) {
       // 轉換字符串ID為ObjectId
       const mongoose = await import('mongoose')
-      const categoryObjectIds = validatedData.categoryIds.map(id => {
+      const categoryObjectIds = validatedData.categoryIds.map((id) => {
         if (!mongoose.default.Types.ObjectId.isValid(id)) {
           throw new Error(`無效的分類ID格式: ${id}`)
         }
@@ -118,7 +118,6 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
         type: 'expense', // 只允許支出分類
       })
 
-
       if (validCategories.length !== validatedData.categoryIds.length) {
         const foundIds = validCategories.map(c => c._id.toString())
         const invalidIds = validatedData.categoryIds.filter(id => !foundIds.includes(id))
@@ -126,20 +125,40 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
       }
     }
 
-    // 檢查同一期間的預算數量限制（最多5筆）
-    const existingBudgetsCount = await Budget.countDocuments({
-      userId: (user as any)._id.toString(),
-      isDeleted: false,
-      status: { $in: [BudgetStatus.ACTIVE, BudgetStatus.INACTIVE] },
-      periodType: validatedData.periodType,
+    // 分別檢查模板和實際預算的限制
+    if (validatedData.isTemplate) {
+      // 檢查模板數量限制
+      const existingTemplatesCount = await Budget.countDocuments({
+        userId: (user as any)._id.toString(),
+        isDeleted: false,
+        isTemplate: true,
+        templateFrequency: validatedData.templateFrequency,
+      })
 
-      // 檢查時間重疊
-      startDate: { $lte: validatedData.endDate },
-      endDate: { $gte: validatedData.startDate },
-    })
+      if (existingTemplatesCount >= 3) {
+        const freqDisplay = validatedData.templateFrequency === 'monthly'
+          ? '月度'
+          : validatedData.templateFrequency === 'quarterly' ? '季度' : '年度'
+        throw new Error(`${freqDisplay}重複模板最多只能創建3個`)
+      }
+    }
+    else {
+      // 檢查同一期間的實際預算數量限制（最多5筆，不包含模板）
+      const existingBudgetsCount = await Budget.countDocuments({
+        userId: (user as any)._id.toString(),
+        isDeleted: false,
+        isTemplate: false, // 只計算實際預算
+        status: { $in: [BudgetStatus.ACTIVE, BudgetStatus.INACTIVE] },
+        periodType: validatedData.periodType,
 
-    if (existingBudgetsCount >= 5) {
-      throw new Error('同一期間最多只能創建5筆預算')
+        // 檢查時間重疊
+        startDate: { $lte: validatedData.endDate },
+        endDate: { $gte: validatedData.startDate },
+      })
+
+      if (existingBudgetsCount >= 5) {
+        throw new Error('同一期間最多只能創建5筆實際預算')
+      }
     }
 
     // 創建預算資料
@@ -162,7 +181,7 @@ export default defineEventHandler(async (event): Promise<CreateBudgetResponse> =
       // 重複預算設定
       isTemplate: validatedData.isTemplate,
       templateFrequency: validatedData.templateFrequency,
-      lastGeneratedPeriod: validatedData.isTemplate 
+      lastGeneratedPeriod: validatedData.isTemplate
         ? getCurrentPeriod(validatedData.templateFrequency as TemplateFrequency, validatedData.startDate)
         : undefined,
 

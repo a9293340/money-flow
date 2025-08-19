@@ -326,7 +326,7 @@ const toggleUserMenu = () => {
 
 const handleLogout = async () => {
   try {
-    const response = await fetch('/api/auth/logout', { 
+    const response = await fetch('/api/auth/logout', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

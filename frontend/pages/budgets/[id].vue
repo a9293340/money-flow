@@ -192,51 +192,221 @@
                 詳細統計
               </h2>
 
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="text-center p-4 bg-gray-50 rounded-lg">
-                  <p class="text-2xl font-bold text-gray-900">
+              <!-- 統計數據卡片式佈局 -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg">
+                  <div class="flex items-center justify-center mb-2">
+                    <svg
+                      class="w-6 h-6 text-blue-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <p class="text-2xl font-bold text-blue-900">
                     ${{ budgetDetail.statistics.dailyAverage.toFixed(2) }}
                   </p>
-                  <p class="text-sm text-gray-600">
+                  <p class="text-sm text-blue-700 font-medium">
                     日均支出
                   </p>
                 </div>
-                <div class="text-center p-4 bg-gray-50 rounded-lg">
-                  <p class="text-2xl font-bold text-gray-900">
+                <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg">
+                  <div class="flex items-center justify-center mb-2">
+                    <svg
+                      class="w-6 h-6 text-green-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      />
+                    </svg>
+                  </div>
+                  <p class="text-2xl font-bold text-green-900">
                     ${{ budgetDetail.statistics.weeklyAverage.toFixed(2) }}
                   </p>
-                  <p class="text-sm text-gray-600">
+                  <p class="text-sm text-green-700 font-medium">
                     週均支出
                   </p>
                 </div>
-                <div class="text-center p-4 bg-gray-50 rounded-lg">
-                  <p class="text-2xl font-bold text-gray-900">
+                <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg">
+                  <div class="flex items-center justify-center mb-2">
+                    <svg
+                      class="w-6 h-6 text-purple-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <p class="text-2xl font-bold text-purple-900">
                     {{ budgetDetail.statistics.daysActive }}
                   </p>
-                  <p class="text-sm text-gray-600">
+                  <p class="text-sm text-purple-700 font-medium">
                     活躍天數
                   </p>
                 </div>
               </div>
 
-              <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p class="text-sm text-gray-600">
-                    預測完成日期
-                  </p>
-                  <p class="font-semibold">
-                    {{ budgetDetail.statistics.projectedEndDate
-                      ? new Date(budgetDetail.statistics.projectedEndDate).toLocaleDateString('zh-TW')
-                      : '無法預測' }}
-                  </p>
+              <!-- 預測狀態和效率卡片 -->
+              <div class="mt-4 space-y-4">
+                <!-- 預測狀態卡片 -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <svg
+                        class="w-4 h-4 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                      </svg>
+                      預測狀態
+                    </h3>
+                    <span
+                      class="px-3 py-1 text-xs font-medium rounded-full"
+                      :class="getProjectedStatusColor(budgetDetail.statistics.projectedStatus || 'on_track')"
+                    >
+                      {{ formatProjectedStatus(budgetDetail.statistics.projectedStatus || 'on_track') }}
+                    </span>
+                  </div>
+
+                  <!-- 預測完成日期或餘額詳情 -->
+                  <div class="text-sm">
+                    <template v-if="budgetDetail.statistics.projectedEndDate">
+                      <div class="flex items-center gap-2 text-gray-700">
+                        <svg
+                          class="w-4 h-4 text-blue-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <span>預計完成：<span class="font-medium">{{ new Date(budgetDetail.statistics.projectedEndDate).toLocaleDateString('zh-TW') }}</span></span>
+                      </div>
+                    </template>
+                    <template v-else-if="budgetDetail.statistics.projectedEndBalance !== null && budgetDetail.statistics.projectedEndBalance !== undefined">
+                      <template v-if="budgetDetail.statistics.projectedStatus === 'under_budget'">
+                        <div class="flex items-center gap-2 text-green-700">
+                          <svg
+                            class="w-4 h-4 text-green-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                            />
+                          </svg>
+                          <span>期間結束時預估餘額：<span class="font-semibold">${{ budgetDetail.statistics.projectedEndBalance.toLocaleString() }}</span></span>
+                        </div>
+                      </template>
+                      <template v-else-if="budgetDetail.statistics.projectedStatus === 'over_budget'">
+                        <div class="flex items-center gap-2 text-red-700">
+                          <svg
+                            class="w-4 h-4 text-red-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                            />
+                          </svg>
+                          <span>已超支：<span class="font-semibold">${{ budgetDetail.statistics.projectedEndBalance.toLocaleString() }}</span></span>
+                        </div>
+                      </template>
+                    </template>
+                    <template v-else>
+                      <div class="flex items-center gap-2 text-gray-500">
+                        <svg
+                          class="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span>需要更多消費記錄才能預測</span>
+                      </div>
+                    </template>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-sm text-gray-600">
-                    預算效率
-                  </p>
-                  <p class="font-semibold capitalize">
-                    {{ budgetDetail.statistics.efficiency }}
-                  </p>
+
+                <!-- 預算效率卡片 -->
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <svg
+                        class="w-4 h-4 text-purple-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                        />
+                      </svg>
+                      預算效率
+                    </h3>
+                    <span
+                      class="px-3 py-1 text-xs font-medium rounded-full capitalize"
+                      :class="{
+                        'bg-green-100 text-green-800': budgetDetail.statistics.efficiency === 'excellent',
+                        'bg-blue-100 text-blue-800': budgetDetail.statistics.efficiency === 'good',
+                        'bg-yellow-100 text-yellow-800': budgetDetail.statistics.efficiency === 'average',
+                        'bg-red-100 text-red-800': budgetDetail.statistics.efficiency === 'exceeded',
+                      }"
+                    >
+                      {{ budgetDetail.statistics.efficiency === 'excellent' ? '優秀'
+                        : budgetDetail.statistics.efficiency === 'good' ? '良好'
+                          : budgetDetail.statistics.efficiency === 'average' ? '一般'
+                            : budgetDetail.statistics.efficiency === 'exceeded' ? '超支' : budgetDetail.statistics.efficiency }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -771,6 +941,8 @@ const {
   formatStatus,
   formatWarningLevel,
   formatPeriodType,
+  formatProjectedStatus,
+  getProjectedStatusColor,
 } = useBudgets()
 
 // 預算詳情資料

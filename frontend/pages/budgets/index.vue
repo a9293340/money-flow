@@ -203,6 +203,23 @@
             </option>
           </select>
 
+          <!-- 預算類型篩選 -->
+          <select
+            v-model="filters.isTemplate"
+            class="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            @change="handleFilterChange"
+          >
+            <option value="">
+              所有類型
+            </option>
+            <option value="false">
+              實際預算
+            </option>
+            <option value="true">
+              重複模板
+            </option>
+          </select>
+
           <!-- 搜尋 -->
           <input
             v-model="filters.search"
@@ -274,6 +291,8 @@
           :key="budget._id"
           :budget="budget"
           @delete="handleDeleteBudget"
+          @toggle-template="handleToggleTemplate"
+          @generate-current="handleGenerateCurrent"
         />
       </div>
 
@@ -376,6 +395,8 @@ const {
   isLoading,
   fetchBudgets,
   deleteBudget,
+  toggleBudgetTemplate,
+  generateCurrentBudget,
 } = useBudgets()
 
 // 篩選條件
@@ -385,6 +406,7 @@ const filters = ref({
   search: '',
   sortBy: 'updatedAt',
   sortOrder: 'desc' as 'asc' | 'desc',
+  isTemplate: '', // 新增模板類型篩選
 })
 
 // 搜尋防抖
@@ -413,6 +435,7 @@ const loadBudgets = async (params?: { page?: number }) => {
       search: filters.value.search || undefined,
       sortBy: filters.value.sortBy,
       sortOrder: filters.value.sortOrder,
+      isTemplate: filters.value.isTemplate === '' ? undefined : filters.value.isTemplate === 'true',
     })
   }
   catch (error) {
@@ -468,6 +491,68 @@ const handleDeleteBudget = async (id: string) => {
   catch (error) {
     console.error('刪除預算失敗:', error)
     alert('刪除失敗，請稍後重試')
+  }
+}
+
+// 切換模板狀態
+const handleToggleTemplate = async (id: string) => {
+  const budget = budgets.value.find(b => b._id === id)
+  if (!budget) return
+
+  const isCurrentlyTemplate = budget.isTemplate
+  let templateFrequency: 'monthly' | 'quarterly' | 'yearly' | undefined
+
+  if (!isCurrentlyTemplate) {
+    // 設為模板時，需要選擇頻率
+    const frequency = prompt('請選擇重複頻率：\n1. monthly (每月)\n2. quarterly (每季)\n3. yearly (每年)', 'monthly')
+
+    if (!frequency || !['monthly', 'quarterly', 'yearly'].includes(frequency)) {
+      alert('無效的頻率，請輸入 monthly、quarterly 或 yearly')
+      return
+    }
+
+    templateFrequency = frequency as 'monthly' | 'quarterly' | 'yearly'
+
+    if (!confirm(`確定要將預算「${budget.name}」設為${frequency === 'monthly' ? '每月' : frequency === 'quarterly' ? '每季' : '每年'}重複模板嗎？`)) {
+      return
+    }
+  }
+  else {
+    if (!confirm(`確定要取消預算「${budget.name}」的重複模板設定嗎？`)) {
+      return
+    }
+  }
+
+  try {
+    await toggleBudgetTemplate(id, !isCurrentlyTemplate, templateFrequency)
+    // 重新載入列表
+    await loadBudgets()
+    alert('模板設定已更新')
+  }
+  catch (error: any) {
+    console.error('切換模板狀態失敗:', error)
+    alert(error.message || '操作失敗，請稍後重試')
+  }
+}
+
+// 生成當前期間預算
+const handleGenerateCurrent = async (templateId: string) => {
+  const template = budgets.value.find(b => b._id === templateId)
+  if (!template || !template.isTemplate) return
+
+  if (!confirm(`確定要根據模板「${template.name}」生成當前期間的預算嗎？`)) {
+    return
+  }
+
+  try {
+    await generateCurrentBudget(templateId)
+    // 重新載入列表
+    await loadBudgets()
+    alert('當前期間預算已生成')
+  }
+  catch (error: any) {
+    console.error('生成當前期間預算失敗:', error)
+    alert(error.message || '生成失敗，請稍後重試')
   }
 }
 

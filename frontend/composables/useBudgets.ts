@@ -24,6 +24,11 @@ interface Budget {
   isActive: boolean
   createdAt: string
   updatedAt: string
+
+  // 重複模板相關
+  isTemplate?: boolean
+  templateFrequency?: 'monthly' | 'quarterly' | 'yearly'
+  lastGeneratedPeriod?: string
 }
 
 interface BudgetSummary {
@@ -100,6 +105,8 @@ interface BudgetDetailResponse {
       weeklyAverage: number
       daysActive: number
       projectedEndDate: Date | null
+      projectedEndBalance: number | null
+      projectedStatus: 'on_track' | 'under_budget' | 'over_budget'
       efficiency: string
     }
   }
@@ -116,7 +123,7 @@ interface CreateBudgetRequest {
   endDate?: string
   warningThreshold?: number
   isActive?: boolean
-  
+
   // 重複預算設定
   isTemplate?: boolean
   templateFrequency?: 'monthly' | 'quarterly' | 'yearly'
@@ -146,6 +153,7 @@ export function useBudgets() {
     search?: string
     sortBy?: string
     sortOrder?: 'asc' | 'desc'
+    isTemplate?: boolean
   } = {}) => {
     isLoading.value = true
     try {
@@ -427,6 +435,34 @@ export function useBudgets() {
     }
   }
 
+  // 格式化預測狀態
+  const formatProjectedStatus = (status: string) => {
+    switch (status) {
+      case 'on_track':
+        return '按計劃進行'
+      case 'under_budget':
+        return '節省使用'
+      case 'over_budget':
+        return '超出預算'
+      default:
+        return status
+    }
+  }
+
+  // 獲取預測狀態的顏色類別
+  const getProjectedStatusColor = (status: string) => {
+    switch (status) {
+      case 'on_track':
+        return 'text-blue-600 bg-blue-50'
+      case 'under_budget':
+        return 'text-green-600 bg-green-50'
+      case 'over_budget':
+        return 'text-red-600 bg-red-50'
+      default:
+        return 'text-gray-600 bg-gray-50'
+    }
+  }
+
   // 獲取指定期間的預算數量
   const checkPeriodBudgetCount = async (periodType: 'monthly' | 'quarterly' | 'yearly', startDate: string, endDate?: string) => {
     try {
@@ -549,6 +585,10 @@ export function useBudgets() {
     fetchBudgetTemplates,
     toggleBudgetTemplate,
     generateCurrentBudget,
+
+    // 預測狀態相關方法
+    formatProjectedStatus,
+    getProjectedStatusColor,
   }
 }
 

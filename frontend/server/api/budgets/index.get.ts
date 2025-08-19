@@ -22,6 +22,7 @@ const querySchema = z.object({
   search: z.string().optional(),
   sortBy: z.enum(['createdAt', 'updatedAt', 'startDate', 'endDate', 'amount', 'usagePercentage']).default('updatedAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  isTemplate: z.string().transform(val => val === 'true' ? true : val === 'false' ? false : undefined).optional(),
 })
 
 interface BudgetListResponse {
@@ -75,6 +76,11 @@ export default defineEventHandler(async (event): Promise<BudgetListResponse> => 
         { categoryIds: { $size: 0 } }, // 全分類預算
         { categoryIds: query.categoryId }, // 特定分類預算
       ]
+    }
+
+    // 模板篩選
+    if (query.isTemplate !== undefined) {
+      baseFilter.isTemplate = query.isTemplate
     }
 
     // 搜尋條件

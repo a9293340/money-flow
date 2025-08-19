@@ -11,10 +11,10 @@ export default defineEventHandler(async (event) => {
   try {
     // 確保用戶上下文
     const user = await ensureUserContext(event)
-    
+
     // 獲取用戶的所有模板
     const templates = await getUserBudgetTemplates((user as any)._id.toString())
-    
+
     // 格式化回傳資料
     const formattedTemplates = templates.map(template => ({
       _id: template._id,
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
       categoryIds: template.categoryIds,
       periodType: template.periodType,
       templateFrequency: template.templateFrequency,
-      frequencyDisplay: template.templateFrequency 
+      frequencyDisplay: template.templateFrequency
         ? formatFrequencyDisplay(template.templateFrequency as any)
         : '未設定',
       lastGeneratedPeriod: template.lastGeneratedPeriod,
@@ -35,23 +35,24 @@ export default defineEventHandler(async (event) => {
       warningThreshold: template.warningThreshold,
       isActive: template.isActive,
       createdAt: template.createdAt,
-      updatedAt: template.updatedAt
+      updatedAt: template.updatedAt,
     }))
 
     return {
       success: true,
       data: {
         templates: formattedTemplates,
-        count: formattedTemplates.length
+        count: formattedTemplates.length,
       },
-      message: '模板列表獲取成功'
+      message: '模板列表獲取成功',
     }
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.error('獲取模板列表失敗:', error)
-    
+
     throw createError({
       statusCode: 500,
-      statusMessage: error.message || '獲取模板列表失敗'
+      statusMessage: error.message || '獲取模板列表失敗',
     })
   }
 })

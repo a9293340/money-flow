@@ -120,16 +120,37 @@ export default defineEventHandler(async (event): Promise<BudgetDetailResponse> =
     const dailyAverage = daysActive > 0 ? currentSpent / daysActive : 0
     const weeklyAverage = dailyAverage * 7
 
-    // 預測結束日期（基於當前消費速度）
+    // 預測結束日期和期間結束時的預估狀態
     let projectedEndDate: Date | null = null
+    let projectedEndBalance: number | null = null
+    let projectedStatus: 'on_track' | 'under_budget' | 'over_budget' = 'on_track'
+
     if (dailyAverage > 0 && budget.remainingAmount > 0) {
       const daysToFinish = Math.ceil(budget.remainingAmount / dailyAverage)
-      projectedEndDate = new Date(now.getTime() + (daysToFinish * 24 * 60 * 60 * 1000))
+      const wouldFinishDate = new Date(now.getTime() + (daysToFinish * 24 * 60 * 60 * 1000))
 
-      // 不能超過預算結束日期
-      if (projectedEndDate > endDate) {
-        projectedEndDate = null
+      if (wouldFinishDate <= endDate) {
+        // 能在期間內花完
+        projectedEndDate = wouldFinishDate
+        projectedStatus = 'on_track'
       }
+      else {
+        // 無法在期間內花完，計算期間結束時的預估餘額
+        const remainingDaysInPeriod = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        const projectedSpendInRemainingDays = dailyAverage * remainingDaysInPeriod
+        projectedEndBalance = Math.max(0, budget.remainingAmount - projectedSpendInRemainingDays)
+        projectedStatus = 'under_budget'
+      }
+    }
+    else if (budget.remainingAmount <= 0) {
+      // 預算已用完或超支
+      projectedStatus = 'over_budget'
+      projectedEndBalance = budget.remainingAmount < 0 ? Math.abs(budget.remainingAmount) : 0
+    }
+    else {
+      // 沒有消費記錄，預估餘額為全部預算
+      projectedEndBalance = budget.remainingAmount
+      projectedStatus = 'under_budget'
     }
 
     // 預算效率評估
@@ -152,6 +173,8 @@ export default defineEventHandler(async (event): Promise<BudgetDetailResponse> =
       weeklyAverage: Math.round(weeklyAverage * 100) / 100,
       daysActive,
       projectedEndDate,
+      projectedEndBalance,
+      projectedStatus,
       efficiency,
     }
 
