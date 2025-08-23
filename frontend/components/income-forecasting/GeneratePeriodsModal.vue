@@ -246,13 +246,14 @@ async function loadForecastingInfo() {
   if (!props.forecastingId) return
 
   try {
-    const response = await $fetch(`/api/income-forecasting/${props.forecastingId}`) as {
-      success: boolean
-      data: IncomeForecastingItem
+    // 使用 any 類型避免複雜的路由類型推斷問題
+    const response: any = await $fetch(`/api/income-forecasting/${props.forecastingId}`)
+    
+    // 根據實際 API 回應結構調整
+    if (response.success && response.data) {
+      forecastingInfo.value = response.data.forecasting || response.data
+      generatePreview()
     }
-
-    forecastingInfo.value = response.data
-    generatePreview()
   }
   catch (error) {
     console.error('載入預測項目資訊失敗:', error)

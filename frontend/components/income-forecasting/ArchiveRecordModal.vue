@@ -381,10 +381,14 @@ async function loadAvailableRecords() {
     const response = await $fetch(`/api/records?${params}`)
     const typedResponse = response as {
       success: boolean
-      data: any[]
+      data: {
+        items: any[]
+        pagination: any
+        summary: any
+      }
     }
 
-    availableRecords.value = typedResponse.data
+    availableRecords.value = typedResponse.data.items
   }
   catch (error) {
     console.error('載入可歸檔記錄失敗:', error)
