@@ -47,6 +47,15 @@ export interface IRecord extends Document {
     originalData?: Record<string, unknown> // 保留原始匯入資料
   }
 
+  // === 收入預測匹配欄位 ===
+  incomeForecastMatching?: {
+    forecastingId?: string
+    periodId?: string
+    confidence?: number
+    matchedAt?: Date
+    isManual?: boolean
+  }
+
   // === 系統欄位 ===
   isDeleted: boolean
 
@@ -227,6 +236,28 @@ const recordSchema = new Schema<IRecord>({
     originalData: Schema.Types.Mixed,
   },
 
+  // === 收入預測匹配欄位 ===
+  incomeForecastMatching: {
+    forecastingId: {
+      type: String,
+    },
+    periodId: {
+      type: String,
+    },
+    confidence: {
+      type: Number,
+      min: 0,
+      max: 1,
+    },
+    matchedAt: {
+      type: Date,
+    },
+    isManual: {
+      type: Boolean,
+      default: false,
+    },
+  },
+
   // === 系統欄位 ===
   isDeleted: {
     type: Boolean,
@@ -239,8 +270,8 @@ const recordSchema = new Schema<IRecord>({
     virtuals: true,
     transform: function (doc: Document, ret: Record<string, unknown>) {
       // 格式化金額顯示
-      ret.formattedAmount = (ret.amount as number).toFixed(2)
-      ret.formattedBaseCurrencyAmount = (ret.baseCurrencyAmount as number).toFixed(2)
+      ret.formattedAmount = ret.amount ? (ret.amount as number).toFixed(2) : '0.00'
+      ret.formattedBaseCurrencyAmount = ret.baseCurrencyAmount ? (ret.baseCurrencyAmount as number).toFixed(2) : '0.00'
       return ret
     },
   },

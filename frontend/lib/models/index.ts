@@ -16,6 +16,27 @@ export {
   BudgetUtils,
 } from './budget'
 
+// 收入預測管理模型
+export {
+  IncomeForecasting,
+  type IIncomeForecasting,
+  IncomeForecastFrequency,
+  PaymentScheduleType,
+  FallbackRule,
+  // Frontend types
+  type IncomeForecastingItem,
+  type IncomeForecastingSummary,
+} from './IncomeForecasting'
+export {
+  IncomePeriod,
+  type IIncomePeriod,
+  type IMatchedRecord,
+  IncomePeriodStatus,
+  // Frontend types
+  type IncomePeriod as IncomePeriodType,
+  type MatchedRecord,
+} from './IncomePeriod'
+
 // 匯出 MongoDB 連接管理
 export {
   connectMongoDB,
