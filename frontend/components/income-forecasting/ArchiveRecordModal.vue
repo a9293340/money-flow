@@ -337,7 +337,8 @@ async function loadPeriods() {
 
   try {
     isLoadingPeriods.value = true
-    const response = await $fetch(`/api/income-forecasting/${props.forecastingId}/periods`) as {
+    const response = await $fetch(`/api/income-forecasting/${props.forecastingId}/periods`)
+    const typedResponse = response as {
       success: boolean
       data: {
         periods: Array<{
@@ -349,7 +350,7 @@ async function loadPeriods() {
       }
     }
 
-    periodOptions.value = response.data.periods.map((period: any) => ({
+    periodOptions.value = typedResponse.data.periods.map((period: any) => ({
       label: `${formatDate(period.startDate)} - ${formatDate(period.endDate)} (${formatCurrency(period.expectedAmount, 'TWD')})`,
       value: period._id,
     }))

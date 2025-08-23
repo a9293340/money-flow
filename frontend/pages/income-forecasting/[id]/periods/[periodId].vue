@@ -348,10 +348,13 @@ async function fetchData() {
     console.log('  - Period response:', periodResponse)
     console.log('  - Forecasting response:', forecastingResponse)
 
-    if (periodResponse.success && forecastingResponse.success) {
-      period.value = periodResponse.data
+    const periodResult = periodResponse as { success: boolean; data: any }
+    const forecastingResult = forecastingResponse as { success: boolean; data: any }
+
+    if (periodResult.success && forecastingResult.success) {
+      period.value = periodResult.data
       // 修復 forecasting 數據結構問題
-      const forecastingData = forecastingResponse.data as any
+      const forecastingData = forecastingResult.data as any
       forecasting.value = forecastingData.forecasting || forecastingData
       console.log('🔍 [子頁面] 數據設定完成:')
       console.log('  - Period:', period.value)
