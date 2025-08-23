@@ -614,22 +614,15 @@ async function loadData() {
 
 async function loadCategories() {
   try {
-    const response = await $fetch('/api/categories?type=income')
-    const typedResponse = response as {
-      success: boolean
-      data: {
-        items: Array<{ _id: string, name: string }>
-        summary: any
-      }
-    }
+    const response: any = await $fetch('/api/categories?type=income')
 
     // 檢查回應格式 - API 回傳的是 data.items 結構
-    if (typedResponse.success && typedResponse.data && typedResponse.data.items && Array.isArray(typedResponse.data.items)) {
+    if (response.success && response.data && response.data.items && Array.isArray(response.data.items)) {
       categoryOptions.value = [
         { label: '全部分類', value: '' },
-        ...typedResponse.data.items.map((cat: any) => ({ label: cat.name, value: cat._id })),
+        ...response.data.items.map((cat: any) => ({ label: cat.name, value: cat._id })),
       ]
-      console.log('成功載入分類篩選:', typedResponse.data.items.length, '個分類')
+      console.log('成功載入分類篩選:', response.data.items.length, '個分類')
     }
     else {
       // 如果資料格式不正確，設置預設值
@@ -709,13 +702,9 @@ async function executeDelete() {
 
 async function performMatch(item: IncomeForecastingItem) {
   try {
-    const response = await $fetch(`/api/income-forecasting/${item._id}/match`, {
+    const response: any = await $fetch(`/api/income-forecasting/${item._id}/match`, {
       method: 'POST',
-    }) as {
-      success: boolean
-      data: { matchedCount: number }
-      message: string
-    }
+    })
 
     toast.add({
       title: '匹配完成',

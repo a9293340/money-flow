@@ -848,13 +848,9 @@ async function performMatch() {
   try {
     isMatching.value = true
 
-    const response = await $fetch(`/api/income-forecasting/${forecasting.value._id}/match`, {
+    const response: any = await $fetch(`/api/income-forecasting/${forecasting.value._id}/match`, {
       method: 'POST',
-    }) as {
-      success: boolean
-      data: { matchedCount: number }
-      message: string
-    }
+    })
 
     toast.add({
       title: '匹配完成',
