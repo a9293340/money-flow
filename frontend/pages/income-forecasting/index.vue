@@ -551,7 +551,8 @@ async function loadData() {
       ...Object.fromEntries(Object.entries(filters.value).filter(([_, v]) => v !== '')),
     })
 
-    const response = await $fetch(`/api/income-forecasting?${params}`) as {
+    const response = await $fetch(`/api/income-forecasting?${params}`)
+    const typedResponse = response as {
       success: boolean
       data: {
         items: IncomeForecastingItem[]
@@ -565,11 +566,11 @@ async function loadData() {
       }
     }
 
-    // 確保 response.data 存在
-    if (response.success && response.data) {
-      forecastingItems.value = response.data.items || []
-      totalItems.value = response.data.pagination?.total || 0
-      summary.value = response.data.summary || {
+    // 確保 typedResponse.data 存在
+    if (typedResponse.success && typedResponse.data) {
+      forecastingItems.value = typedResponse.data.items || []
+      totalItems.value = typedResponse.data.pagination?.total || 0
+      summary.value = typedResponse.data.summary || {
         totalItems: 0,
         activeItems: 0,
         monthlyExpected: 0,
@@ -613,7 +614,8 @@ async function loadData() {
 
 async function loadCategories() {
   try {
-    const response = await $fetch('/api/categories?type=income') as {
+    const response = await $fetch('/api/categories?type=income')
+    const typedResponse = response as {
       success: boolean
       data: {
         items: Array<{ _id: string, name: string }>
@@ -622,12 +624,12 @@ async function loadCategories() {
     }
 
     // 檢查回應格式 - API 回傳的是 data.items 結構
-    if (response.success && response.data && response.data.items && Array.isArray(response.data.items)) {
+    if (typedResponse.success && typedResponse.data && typedResponse.data.items && Array.isArray(typedResponse.data.items)) {
       categoryOptions.value = [
         { label: '全部分類', value: '' },
-        ...response.data.items.map((cat: any) => ({ label: cat.name, value: cat._id })),
+        ...typedResponse.data.items.map((cat: any) => ({ label: cat.name, value: cat._id })),
       ]
-      console.log('成功載入分類篩選:', response.data.items.length, '個分類')
+      console.log('成功載入分類篩選:', typedResponse.data.items.length, '個分類')
     }
     else {
       // 如果資料格式不正確，設置預設值
@@ -761,13 +763,14 @@ function handleGeneratePeriodsSuccess() {
 // Load user info
 async function loadUser() {
   try {
-    const response = await $fetch('/api/auth/me') as {
+    const response = await $fetch('/api/auth/me')
+    const typedResponse = response as {
       success: boolean
       data: any
     }
 
-    if (response.success) {
-      user.value = response.data
+    if (typedResponse.success) {
+      user.value = typedResponse.data
     }
   }
   catch (error) {

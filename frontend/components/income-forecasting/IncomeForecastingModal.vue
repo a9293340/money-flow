@@ -967,7 +967,8 @@ const isFormValid = computed(() => {
 async function loadCategories() {
   try {
     isLoadingCategories.value = true
-    const response = await $fetch('/api/categories?type=income') as {
+    const response = await $fetch('/api/categories?type=income')
+    const typedResponse = response as {
       success: boolean
       data: {
         items: Array<{ _id: string, name: string, color?: string, icon?: string }>
@@ -976,8 +977,8 @@ async function loadCategories() {
     }
 
     // 檢查回應格式 - API 回傳的是 data.items 結構
-    if (response.success && response.data && response.data.items && Array.isArray(response.data.items)) {
-      categoryOptions.value = response.data.items.map((cat: any) => ({
+    if (typedResponse.success && typedResponse.data && typedResponse.data.items && Array.isArray(typedResponse.data.items)) {
+      categoryOptions.value = typedResponse.data.items.map((cat: any) => ({
         label: cat.name,
         value: cat._id,
       }))

@@ -320,7 +320,8 @@ async function generatePeriods() {
       body: {
         count: form.count,
       },
-    }) as {
+    })
+    const typedResponse = response as {
       success: boolean
       data: {
         generatedCount: number
@@ -331,12 +332,12 @@ async function generatePeriods() {
     }
 
     lastGenerationResult.value = {
-      generatedCount: response.data.generatedCount,
+      generatedCount: typedResponse.data.generatedCount,
     }
 
     toast.add({
       title: '生成成功',
-      description: response.message,
+      description: typedResponse.message,
       color: 'green',
     })
 

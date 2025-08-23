@@ -768,17 +768,18 @@ async function loadData() {
     const apiUrl = `/api/income-forecasting/${route.params.id}`
     console.log('🔍 發送 API 請求:', apiUrl)
 
-    const response = await $fetch(apiUrl) as {
+    const response = await $fetch(apiUrl)
+    const typedResponse = response as {
       success: boolean
       data: IncomeForecastingItem
     }
 
-    console.log('🔍 API 響應:', response)
-    console.log('🔍 Response success:', response.success)
-    console.log('🔍 Response data:', response.data)
+    console.log('🔍 API 響應:', typedResponse)
+    console.log('🔍 Response success:', typedResponse.success)
+    console.log('🔍 Response data:', typedResponse.data)
 
     // 修復數據結構問題 - API 返回的是 {forecasting: {...}}
-    const responseData = response.data as any
+    const responseData = typedResponse.data as any
     forecasting.value = responseData.forecasting || responseData
     console.log('🔍 設定後的 forecasting.value:', forecasting.value)
     console.log('🔍 Forecasting name:', forecasting.value?.name)
@@ -811,7 +812,8 @@ async function loadPeriods() {
       limit: periodsPagination.value.limit.toString(),
     })
 
-    const response = await $fetch(`/api/income-forecasting/${route.params.id}/periods?${params}`) as {
+    const response = await $fetch(`/api/income-forecasting/${route.params.id}/periods?${params}`)
+    const typedResponse = response as {
       success: boolean
       data: {
         periods: IncomePeriod[]
@@ -819,8 +821,8 @@ async function loadPeriods() {
       }
     }
 
-    periods.value = response.data.periods
-    periodsPagination.value = response.data.pagination
+    periods.value = typedResponse.data.periods
+    periodsPagination.value = typedResponse.data.pagination
   }
   catch (err: any) {
     console.error('載入追蹤期間失敗:', err)
@@ -1014,13 +1016,14 @@ function goToNextPage() {
 // Load user info
 async function loadUser() {
   try {
-    const response = await $fetch('/api/auth/me') as {
+    const response = await $fetch('/api/auth/me')
+    const typedResponse = response as {
       success: boolean
       data: any
     }
 
-    if (response.success) {
-      user.value = response.data
+    if (typedResponse.success) {
+      user.value = typedResponse.data
     }
   }
   catch (error) {
