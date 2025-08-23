@@ -378,12 +378,13 @@ async function loadAvailableRecords() {
       ...(searchQuery.value && { search: searchQuery.value }),
     })
 
-    const response = await $fetch(`/api/records?${params}`) as {
+    const response = await $fetch(`/api/records?${params}`)
+    const typedResponse = response as {
       success: boolean
       data: any[]
     }
 
-    availableRecords.value = response.data
+    availableRecords.value = typedResponse.data
   }
   catch (error) {
     console.error('載入可歸檔記錄失敗:', error)
@@ -422,14 +423,15 @@ async function archiveRecord() {
         recordId: form.recordId,
         periodId: form.periodId || undefined,
       },
-    }) as {
+    })
+    const typedResponse = response as {
       success: boolean
       message: string
     }
 
     toast.add({
       title: '歸檔成功',
-      description: response.message,
+      description: typedResponse.message,
       color: 'green',
     })
 
