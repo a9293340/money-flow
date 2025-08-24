@@ -248,7 +248,7 @@ async function loadForecastingInfo() {
   try {
     // 使用 any 類型避免複雜的路由類型推斷問題
     const response: any = await $fetch(`/api/income-forecasting/${props.forecastingId}`)
-    
+
     // 根據實際 API 回應結構調整
     if (response.success && response.data) {
       forecastingInfo.value = response.data.forecasting || response.data

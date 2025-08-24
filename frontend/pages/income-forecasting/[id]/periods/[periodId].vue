@@ -348,8 +348,8 @@ async function fetchData() {
     console.log('  - Period response:', periodResponse)
     console.log('  - Forecasting response:', forecastingResponse)
 
-    const periodResult = periodResponse as { success: boolean; data: any }
-    const forecastingResult = forecastingResponse as { success: boolean; data: any }
+    const periodResult = periodResponse as { success: boolean, data: any }
+    const forecastingResult = forecastingResponse as { success: boolean, data: any }
 
     if (periodResult.success && forecastingResult.success) {
       period.value = periodResult.data
