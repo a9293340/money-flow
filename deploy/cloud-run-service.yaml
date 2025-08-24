@@ -71,6 +71,11 @@ spec:
                 secretKeyRef:
                   name: encryption-key
                   key: latest
+            - name: OPEN_AI_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: open-ai-key
+                  key: latest
 
             # JWT 過期時間
             - name: JWT_EXPIRES_IN
