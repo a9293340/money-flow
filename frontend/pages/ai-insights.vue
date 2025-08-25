@@ -971,7 +971,7 @@ const isCompleteDiagnosis = (data: any) => {
 const loadCachedResults = async () => {
   try {
     console.log('🔄 載入已緩存的分析結果...')
-    const response = await $fetch('/api/ai-insights/cached-results')
+    const response: any = await $fetch('/api/ai-insights/cached-results')
 
     if (response.success && response.data) {
       // 載入健康分析結果
@@ -1008,18 +1008,18 @@ const loadCachedResults = async () => {
       analysisLimits.value = {
         health: {
           canAnalyze: response.data.health.canAnalyze,
-          waitTime: response.data.health.waitTime,
-          nextAvailable: response.data.health.nextAvailable,
+          waitTime: response.data.health.waitTime || null,
+          nextAvailable: response.data.health.nextAvailable || null,
         },
         budget: {
           canAnalyze: response.data.budget.canAnalyze,
-          waitTime: response.data.budget.waitTime,
-          nextAvailable: response.data.budget.nextAvailable,
+          waitTime: response.data.budget.waitTime || null,
+          nextAvailable: response.data.budget.nextAvailable || null,
         },
         trend: {
           canAnalyze: response.data.trend.canAnalyze,
-          waitTime: response.data.trend.waitTime,
-          nextAvailable: response.data.trend.nextAvailable,
+          waitTime: response.data.trend.waitTime || null,
+          nextAvailable: response.data.trend.nextAvailable || null,
         },
       }
 
