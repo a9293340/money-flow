@@ -732,7 +732,7 @@ useHead({
 })
 
 // Composables
-const { testConnection: testAIConnection, getQuickInsight: getAIQuickInsight } = useAIAnalysis()
+const { getQuickInsight: getAIQuickInsight } = useAIAnalysis()
 const { runDiagnosis, getGradeColor, formatHealthScore } = useFinancialHealth()
 
 // 響應式數據

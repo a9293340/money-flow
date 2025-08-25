@@ -432,31 +432,6 @@ function calculateGrowthRate(values: number[]): number {
 }
 
 /**
- * 生成備用預測數據
- */
-function generateFallbackPredictions(financialData: UserFinancialData) {
-  const { summary } = financialData
-
-  return {
-    income: {
-      predicted: summary.totalIncome * 1.02, // 假設2%增長
-      confidence: 0.5,
-      trend: 'stable' as const,
-    },
-    expenses: {
-      predicted: summary.totalExpenses * 1.03, // 假設3%增長
-      confidence: 0.5,
-      trend: 'increasing' as const,
-    },
-    savings: {
-      predicted: summary.netAmount * 0.98, // 假設儲蓄略減
-      confidence: 0.4,
-      trend: 'decreasing' as const,
-    },
-  }
-}
-
-/**
  * 獲取日期範圍
  */
 function getDateRange(range: string) {
