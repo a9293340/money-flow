@@ -189,7 +189,7 @@ export class CacheManager {
     let oldestTime = new Date()
 
     for (const [key, item] of this.cache.entries()) {
-      if (item.timestamp < oldestTime) {
+      if (item.timestamp.getTime() < oldestTime.getTime()) {
         oldestTime = item.timestamp
         oldestKey = key
       }
@@ -209,7 +209,7 @@ export class CacheManager {
     let cleanedCount = 0
 
     for (const [key, item] of this.cache.entries()) {
-      if (now > item.expiresAt) {
+      if (now.getTime() > item.expiresAt.getTime()) {
         this.cache.delete(key)
         cleanedCount++
       }
@@ -361,8 +361,15 @@ export const cacheUtils = {
    * 計算資料簽名 (用於快取鍵)
    */
   calculateDataSignature: (data: any): string => {
-    const manager = new CacheManager()
-    return manager['generateDataHash'](data) // 訪問私有方法
+    // 使用相同的雜湊演算法
+    const jsonString = JSON.stringify(data, Object.keys(data).sort())
+    let hash = 0
+    for (let i = 0; i < jsonString.length; i++) {
+      const char = jsonString.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // 轉換為 32 位整數
+    }
+    return Math.abs(hash).toString(36)
   },
 
   /**
@@ -405,4 +412,166 @@ export function withCache<T extends (...args: any[]) => Promise<AIAnalysisRespon
 
     return result
   }) as T
+}
+
+/**
+ * AI 快取管理器 (Phase 2 增強版)
+ * 支援多類型分析結果快取和錯誤統計
+ */
+const cache = new Map<string, {
+  data: any
+  timestamp: number
+  ttl: number
+  type: string
+}>()
+
+const errorCounts = new Map<string, number>()
+
+export const AICacheManager = {
+
+  /**
+   * 設定快取項目
+   */
+  async set(
+    key: string,
+    data: any,
+    type: string,
+    ttl: number = 15 * 60 * 1000,
+  ): Promise<void> {
+    const item = {
+      data,
+      timestamp: Date.now(),
+      ttl,
+      type,
+    }
+
+    cache.set(key, item)
+
+    // 清理過期快取
+    AICacheManager.cleanup()
+  },
+
+  /**
+   * 獲取快取項目
+   */
+  async get(key: string, type: string): Promise<any | null> {
+    const item = cache.get(key)
+
+    if (!item || item.type !== type) {
+      return null
+    }
+
+    // 檢查是否過期
+    if (Date.now() - item.timestamp > item.ttl) {
+      cache.delete(key)
+      return null
+    }
+
+    return item.data
+  },
+
+  /**
+   * 刪除快取項目
+   */
+  async delete(key: string): Promise<boolean> {
+    return cache.delete(key)
+  },
+
+  /**
+   * 清空特定類型的快取
+   */
+  async clearType(type: string): Promise<void> {
+    const keysToDelete: string[] = []
+
+    for (const [key, item] of cache.entries()) {
+      if (item.type === type) {
+        keysToDelete.push(key)
+      }
+    }
+
+    keysToDelete.forEach(key => cache.delete(key))
+  },
+
+  /**
+   * 清理過期快取
+   */
+  cleanup(): void {
+    const now = Date.now()
+    const keysToDelete: string[] = []
+
+    for (const [key, item] of cache.entries()) {
+      if (now - item.timestamp > item.ttl) {
+        keysToDelete.push(key)
+      }
+    }
+
+    keysToDelete.forEach(key => cache.delete(key))
+  },
+
+  /**
+   * 增加錯誤計數
+   */
+  async incrementErrorCount(type: string): Promise<number> {
+    const current = errorCounts.get(type) || 0
+    const newCount = current + 1
+    errorCounts.set(type, newCount)
+    return newCount
+  },
+
+  /**
+   * 獲取錯誤計數
+   */
+  getErrorCount(type: string): number {
+    return errorCounts.get(type) || 0
+  },
+
+  /**
+   * 重置錯誤計數
+   */
+  resetErrorCount(type: string): void {
+    errorCounts.set(type, 0)
+  },
+
+  /**
+   * 獲取快取統計
+   */
+  getStats(): {
+    totalItems: number
+    itemsByType: Record<string, number>
+    totalErrors: number
+    errorsByType: Record<string, number>
+    memoryUsage: number
+  } {
+    const itemsByType: Record<string, number> = {}
+    let memoryUsage = 0
+
+    for (const item of cache.values()) {
+      itemsByType[item.type] = (itemsByType[item.type] || 0) + 1
+      memoryUsage += JSON.stringify(item.data).length
+    }
+
+    const errorsByType: Record<string, number> = {}
+    let totalErrors = 0
+
+    for (const [type, count] of errorCounts.entries()) {
+      errorsByType[type] = count
+      totalErrors += count
+    }
+
+    return {
+      totalItems: cache.size,
+      itemsByType,
+      totalErrors,
+      errorsByType,
+      memoryUsage,
+    }
+  },
+
+  /**
+   * 清空所有快取
+   */
+  clear(): void {
+    cache.clear()
+    errorCounts.clear()
+  },
 }

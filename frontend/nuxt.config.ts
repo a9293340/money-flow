@@ -49,6 +49,18 @@ export default defineNuxtConfig({
   // 服務端渲染配置
   ssr: process.env.TAURI_PLATFORM ? false : true,
 
+  // Components 配置 - 自動掃描子目錄
+  components: [
+    {
+      path: '~/components',
+      pathPrefix: false,
+    },
+    {
+      path: '~/components/ai-analysis',
+      prefix: 'AI',
+    },
+  ],
+
   // 確保自動導入正常工作
   imports: {
     autoImport: true,

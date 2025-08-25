@@ -15,6 +15,7 @@ import { useCacheManager } from '~/lib/ai/cache-manager'
 import { useOpenAIClient } from '~/lib/ai/openai-client'
 import { DataPreprocessor, financialAnalyzer } from '~/lib/ai/financial-analyzer'
 import { promptTemplates } from '~/lib/ai/prompt-templates'
+import { canPerformAnalysis, saveAnalysisResult, getCachedAnalysisResult, formatWaitTime } from '~/lib/models/ai-analysis-record'
 import type {
   AIEndpointResponse,
   FinancialHealthDiagnosis,
@@ -218,7 +219,37 @@ export default defineEventHandler(async (event): Promise<AIEndpointResponse<Fina
     // 初始化快取管理器
     const cacheManager = useCacheManager()
 
-    // 檢查快取
+    // 檢查分析頻率限制
+    const analysisCheck = await canPerformAnalysis(user.id, 'health')
+
+    if (!analysisCheck.canAnalyze) {
+      // 返回緩存結果和等待時間信息
+      const cachedResult = await getCachedAnalysisResult(user.id, 'health')
+
+      if (cachedResult) {
+        return {
+          success: true,
+          data: cachedResult,
+          message: `健康分析每24小時僅能執行一次，${formatWaitTime(analysisCheck.nextAvailableAt!)}`,
+          timestamp: new Date().toISOString(),
+          requestId: `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          cached: true,
+          nextAvailable: analysisCheck.nextAvailableAt?.toISOString(),
+        }
+      }
+
+      // 如果沒有緩存結果，返回錯誤
+      throw createError({
+        statusCode: 429,
+        statusMessage: `健康分析每24小時僅能執行一次，${formatWaitTime(analysisCheck.nextAvailableAt!)}`,
+        data: {
+          nextAvailable: analysisCheck.nextAvailableAt?.toISOString(),
+          waitTime: formatWaitTime(analysisCheck.nextAvailableAt!),
+        },
+      })
+    }
+
+    // 檢查快取 (短期快取，用於避免重複計算)
     if (validatedBody.useAI) {
       const cached = cacheManager.get(
         user.id,
@@ -292,6 +323,15 @@ export default defineEventHandler(async (event): Promise<AIEndpointResponse<Fina
           } as any,
         },
       )
+    }
+
+    // 保存分析結果到頻率限制記錄
+    try {
+      await saveAnalysisResult(user.id, 'health', responseData)
+    }
+    catch (saveError) {
+      console.error('保存健康分析結果失敗:', saveError)
+      // 不阻礙正常流程，僅記錄錯誤
     }
 
     // 回應成功結果

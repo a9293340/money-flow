@@ -215,6 +215,126 @@ export interface TrendPredictionProps extends BaseAIComponentProps {
 }
 
 // =========================
+// Phase 2: 智能建議相關類型
+// =========================
+
+/**
+ * 預算建議請求參數
+ */
+export interface BudgetRecommendationRequest {
+  analysisRange?: string // '1M' | '3M' | '6M' | '1Y'
+  budgetGoal?: string // 'optimize' | 'save' | 'reduce' | 'balance'
+  focusAreas?: string[] // ['housing', 'food', 'transportation', 'entertainment']
+  currentBudgetId?: string
+}
+
+/**
+ * 用戶財務數據
+ */
+export interface UserFinancialData {
+  userId: string
+  analysisRange: string
+  dateRange: {
+    startDate: Date
+    endDate: Date
+  }
+  records: any[]
+  categories: any[]
+  budgets: any[]
+  summary: {
+    totalIncome: number
+    totalExpenses: number
+    netAmount: number
+    savingsRate: number
+    recordCount: number
+    expensesByCategory: Array<{
+      categoryId: string
+      categoryName: string
+      totalAmount: number
+      recordCount: number
+      averageAmount: number
+    }>
+  }
+}
+
+/**
+ * 預算建議結果
+ */
+export interface BudgetRecommendation {
+  recommendedBudget: {
+    totalBudget: number
+    categories: Array<{
+      name: string
+      amount: number
+      percentage: number
+    }>
+  }
+  recommendations: string[] // 具體建議
+  insights: string[] // 洞察分析
+  improvements: string[] // 改善空間
+  riskWarnings: string[] // 風險警告
+  nextSteps: string[] // 後續步驟
+  confidence: number // 信心度 (0-1)
+  methodology: string // 分析方法說明
+  generatedAt: string
+  analysisParams: {
+    budgetGoal: string
+    focusAreas: string[]
+    analysisRange: string
+    dataPoints: number
+  }
+}
+
+/**
+ * 趨勢預測請求參數
+ */
+export interface TrendPredictionRequest {
+  analysisRange?: string
+  predictionPeriod?: string // '1M' | '3M' | '6M'
+  focusMetrics?: string[] // ['income', 'expenses', 'savings', 'categories']
+}
+
+/**
+ * 趨勢預測結果
+ */
+export interface TrendPrediction {
+  predictions: {
+    income: {
+      predicted: number
+      confidence: number
+      trend: 'increasing' | 'decreasing' | 'stable'
+    }
+    expenses: {
+      predicted: number
+      confidence: number
+      trend: 'increasing' | 'decreasing' | 'stable'
+    }
+    savings: {
+      predicted: number
+      confidence: number
+      trend: 'increasing' | 'decreasing' | 'stable'
+    }
+  }
+  trends: Array<{
+    metric: string
+    direction: 'up' | 'down' | 'stable'
+    strength: number // 趨勢強度 (0-1)
+    description: string
+  }>
+  opportunities: string[] // 機會點
+  risks: string[] // 風險點
+  recommendations: string[] // 建議
+  confidence: number // 整體信心度
+  methodology: string
+  generatedAt: string
+  analysisParams: {
+    predictionPeriod: string
+    focusMetrics: string[]
+    analysisRange: string
+  }
+}
+
+// =========================
 // API 端點相關類型
 // =========================
 
@@ -232,6 +352,8 @@ export interface AIEndpointResponse<T = any> {
   }
   timestamp: string
   requestId: string
+  cached?: boolean
+  nextAvailable?: string
 }
 
 /**
@@ -242,18 +364,22 @@ export type HealthDiagnosisResponse = AIEndpointResponse<FinancialHealthDiagnosi
 /**
  * 預算建議 API 回應
  */
-export type BudgetRecommendationResponse = AIEndpointResponse<{
-  recommendations: BudgetRecommendationProps['recommendations']
-  summary: string
-}>
+export interface BudgetRecommendationResponse {
+  success: boolean
+  data: BudgetRecommendation
+  cached: boolean
+  message: string
+}
 
 /**
  * 趨勢預測 API 回應
  */
-export type TrendPredictionResponse = AIEndpointResponse<{
-  predictions: TrendPredictionProps['predictions']
-  summary: string
-}>
+export interface TrendPredictionResponse {
+  success: boolean
+  data: TrendPrediction
+  cached: boolean
+  message: string
+}
 
 // =========================
 // 資料處理相關類型

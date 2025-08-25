@@ -195,6 +195,132 @@ export class OpenAIClient {
   }
 
   /**
+   * 生成預算建議
+   */
+  async generateBudgetRecommendation(prompt: {
+    systemPrompt: string
+    userPrompt: string
+  }): Promise<any> {
+    try {
+      console.log('🎯 開始生成預算建議')
+
+      const response = await this.sendChatCompletion([
+        {
+          role: 'system',
+          content: prompt.systemPrompt,
+        },
+        {
+          role: 'user',
+          content: prompt.userPrompt,
+        },
+      ], {
+        max_tokens: 1500,
+        temperature: 0.7,
+      })
+
+      const content = response.choices[0]?.message?.content?.trim()
+      if (!content) {
+        throw new Error('OpenAI 預算建議回應內容為空')
+      }
+
+      // 嘗試解析 JSON 回應
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0])
+          console.log('✅ 成功解析預算建議 JSON')
+          return parsed
+        }
+      }
+      catch (parseError) {
+        console.warn('⚠️ JSON 解析失敗，使用文字回應:', parseError)
+      }
+
+      // 如果 JSON 解析失敗，返回結構化格式
+      return {
+        recommendedBudget: {
+          totalBudget: 0,
+          categories: [],
+        },
+        recommendations: [content],
+        insights: [],
+        improvements: [],
+        riskWarnings: [],
+        nextSteps: [],
+        confidence: 0.7,
+        methodology: '基於 AI 文字分析',
+      }
+    }
+    catch (error) {
+      console.error('🎯 預算建議生成失敗:', error)
+      throw new Error(`預算建議生成失敗: ${error instanceof Error ? error.message : '未知錯誤'}`)
+    }
+  }
+
+  /**
+   * 生成趨勢預測
+   */
+  async generateTrendPrediction(prompt: {
+    systemPrompt: string
+    userPrompt: string
+  }): Promise<any> {
+    try {
+      console.log('📈 開始生成趨勢預測')
+
+      const response = await this.sendChatCompletion([
+        {
+          role: 'system',
+          content: prompt.systemPrompt,
+        },
+        {
+          role: 'user',
+          content: prompt.userPrompt,
+        },
+      ], {
+        max_tokens: 1200,
+        temperature: 0.6,
+      })
+
+      const content = response.choices[0]?.message?.content?.trim()
+      if (!content) {
+        throw new Error('OpenAI 趨勢預測回應內容為空')
+      }
+
+      // 嘗試解析 JSON 回應
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0])
+          console.log('✅ 成功解析趨勢預測 JSON')
+          return parsed
+        }
+      }
+      catch (parseError) {
+        console.warn('⚠️ 趨勢預測 JSON 解析失敗，使用文字回應:', parseError)
+      }
+
+      // 如果 JSON 解析失敗，返回結構化格式
+      return {
+        predictions: {
+          income: { predicted: 0, confidence: 0.5, trend: '持平' },
+          expenses: { predicted: 0, confidence: 0.5, trend: '持平' },
+          savings: { predicted: 0, confidence: 0.5, trend: '持平' },
+        },
+        trends: [],
+        opportunities: [content],
+        risks: [],
+        recommendations: [],
+        confidence: 0.6,
+        methodology: '基於 AI 文字分析',
+      }
+    }
+    catch (error) {
+      console.error('📈 趨勢預測生成失敗:', error)
+      throw new Error(`趨勢預測生成失敗: ${error instanceof Error ? error.message : '未知錯誤'}`)
+    }
+  }
+
+  /**
    * 計算 API 使用成本
    */
   private calculateCost(totalTokens: number): number {
