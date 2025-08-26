@@ -48,7 +48,7 @@ export function validateStepAnswers(
   step: number,
   basicInfo: BasicFinancialInfo,
   riskAssessment: RiskAssessment,
-  lifestyle: LifestylePreferences
+  lifestyle: LifestylePreferences,
 ): string[] {
   const errors: string[] = []
 
