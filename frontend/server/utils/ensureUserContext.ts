@@ -15,5 +15,14 @@ export default function ensureUserContext(event: any) {
     })
   }
 
-  return userContext.user
+  // 確保 user 物件存在必要屬性
+  const user = userContext.user
+  if (!user) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'User object is null or undefined',
+    })
+  }
+
+  return user
 }

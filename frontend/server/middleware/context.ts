@@ -6,12 +6,13 @@
 import { verifyAndGetUser } from '~/lib/utils/auth-helpers'
 
 export default defineEventHandler(async (event) => {
-  // 只處理 /api/records、/api/categories、/api/statistics 和 /api/budgets 的請求
+  // 只處理需要用戶認證的 API 請求
   const url = getRequestURL(event)
   if (!url.pathname.startsWith('/api/records')
     && !url.pathname.startsWith('/api/categories')
     && !url.pathname.startsWith('/api/statistics')
-    && !url.pathname.startsWith('/api/budgets')) {
+    && !url.pathname.startsWith('/api/budgets')
+    && !url.pathname.startsWith('/api/financial-profile')) {
     return
   }
 

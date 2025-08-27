@@ -45,7 +45,7 @@ export interface IFinancialProfile {
   riskAssessment: RiskAssessment
   goals: FinancialGoal[]
   lifestyle: LifestylePreferences
-  additionalNotes?: string  // 自由文字諮詢內容，限制 100 字
+  additionalNotes?: string // 自由文字諮詢內容，限制 100 字
   completionDate?: Date
   lastUpdated?: Date
 }

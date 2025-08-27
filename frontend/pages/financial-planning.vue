@@ -118,21 +118,27 @@
           </div>
         </div>
 
-        <!-- Phase 1 說明 -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+        <!-- AI 分析結果區塊 -->
+        <div v-if="hasProfile && analysisResult">
+          <FinancialPlanningResult :analysis-result="analysisResult" />
+        </div>
+
+        <!-- Phase 3 功能說明 -->
+        <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
           <div class="flex items-start">
-            <div class="text-blue-400 mr-3 mt-1">
-              ℹ️
+            <div class="text-green-400 mr-3 mt-1">
+              ✅
             </div>
             <div>
-              <h3 class="text-blue-900 font-medium mb-2">
-                Phase 1 功能說明
+              <h3 class="text-green-900 font-medium mb-2">
+                Phase 3 - AI 智能分析已上線
               </h3>
-              <ul class="text-blue-800 text-sm space-y-1">
-                <li>• 基礎問卷資料收集和步驟控制</li>
-                <li>• 簡單的表單驗證和進度追蹤</li>
-                <li>• 使用 sessionStorage 進行資料儲存</li>
-                <li>• AI 分析功能將在 Phase 3 實作</li>
+              <ul class="text-green-800 text-sm space-y-1">
+                <li>• OpenAI GPT-4 驅動的智能財務分析</li>
+                <li>• 個人化投資建議和資產配置</li>
+                <li>• 預算規劃和儲蓄目標設定</li>
+                <li>• 分析結果 7 天有效期限制</li>
+                <li>• 完整的風險評估和財務健康度評分</li>
               </ul>
             </div>
           </div>
@@ -180,6 +186,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import type { IFinancialProfile } from '~/lib/models/financial-profile'
+import type { FinancialAnalysisResult } from '~/lib/models/financial-analysis'
 import { useFinancialProfile } from '~/composables/useFinancialProfile'
 
 // =========================
@@ -214,6 +221,10 @@ const {
   clearError,
   getProfileSummary,
 } = useFinancialProfile()
+
+// AI 分析功能
+const { useFinancialAnalysis } = await import('~/composables/useFinancialAnalysis')
+const { result: analysisResult } = useFinancialAnalysis()
 
 // =========================
 // Computed

@@ -878,9 +878,13 @@
                     <div class="border-t border-gray-200 pt-6">
                       <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
                         <div class="flex items-start mb-3">
-                          <div class="text-purple-400 mr-3 mt-1">💬</div>
+                          <div class="text-purple-400 mr-3 mt-1">
+                            💬
+                          </div>
                           <div>
-                            <h4 class="text-purple-900 font-medium mb-1">其他想諮詢的內容</h4>
+                            <h4 class="text-purple-900 font-medium mb-1">
+                              其他想諮詢的內容
+                            </h4>
                             <p class="text-purple-800 text-sm">
                               如果您有特殊的財務狀況或想詢問的問題，請在此自由描述
                             </p>
@@ -903,11 +907,11 @@
                             <p class="text-xs text-gray-500">
                               此資訊將幫助 AI 提供更個人化的建議
                             </p>
-                            <p 
+                            <p
                               class="text-xs"
                               :class="{
                                 'text-red-600': (financialProfile.additionalNotes?.length || 0) > 100,
-                                'text-gray-500': (financialProfile.additionalNotes?.length || 0) <= 100
+                                'text-gray-500': (financialProfile.additionalNotes?.length || 0) <= 100,
                               }"
                             >
                               {{ financialProfile.additionalNotes?.length || 0 }}/100 字
@@ -1190,13 +1194,29 @@ const previousStep = () => {
   }
 }
 
-const completeQuestionnaire = () => {
+const completeQuestionnaire = async () => {
   if (canProceedToNextStep.value) {
     // 添加完成時間
     financialProfile.value.completionDate = new Date()
     financialProfile.value.lastUpdated = new Date()
 
+    // 先 emit 完成事件
     emit('complete', financialProfile.value)
+
+    // 然後觸發 AI 分析
+    try {
+      const analysisComposable = await import('~/composables/useFinancialAnalysis')
+      const { analyzeFinancialProfile } = analysisComposable.useFinancialAnalysis()
+
+      // 開始 AI 分析 (異步執行，不阻塞完成流程)
+      await analyzeFinancialProfile(financialProfile.value)
+
+      console.log('AI 財務分析已完成')
+    }
+    catch (error) {
+      console.error('AI 分析過程中發生錯誤:', error)
+      // 不影響問卷完成流程，只記錄錯誤
+    }
   }
 }
 
