@@ -13,9 +13,60 @@ interface AnalysisState {
   estimatedTime: number
   error: string | null
   result: FinancialAnalysisResult | null
+  currentStage: string
+  stages: AnalysisStage[]
+}
+
+interface AnalysisStage {
+  id: string
+  name: string
+  description: string
+  duration: number
+  completed: boolean
+  startedAt?: Date
+  completedAt?: Date
 }
 
 export const useFinancialAnalysis = () => {
+  // 分析階段定義
+  const defaultStages: AnalysisStage[] = [
+    {
+      id: 'validation',
+      name: '資料驗證',
+      description: '驗證財務問卷資料...',
+      duration: 2,
+      completed: false,
+    },
+    {
+      id: 'processing',
+      name: '資料處理',
+      description: '處理和分析您的財務情況...',
+      duration: 8,
+      completed: false,
+    },
+    {
+      id: 'ai_analysis',
+      name: 'AI 分析',
+      description: '運用 AI 進行深度財務分析...',
+      duration: 15,
+      completed: false,
+    },
+    {
+      id: 'recommendations',
+      name: '生成建議',
+      description: '生成個人化理財建議...',
+      duration: 8,
+      completed: false,
+    },
+    {
+      id: 'finalization',
+      name: '完成分析',
+      description: '整理分析結果和報告...',
+      duration: 3,
+      completed: false,
+    },
+  ]
+
   // Reactive state
   const analysisState = ref<AnalysisState>({
     isAnalyzing: false,
@@ -23,6 +74,8 @@ export const useFinancialAnalysis = () => {
     estimatedTime: 0,
     error: null,
     result: null,
+    currentStage: '',
+    stages: [...defaultStages],
   })
 
   /**
@@ -30,37 +83,51 @@ export const useFinancialAnalysis = () => {
    */
   const analyzeFinancialProfile = async (profile: IFinancialProfile): Promise<FinancialAnalysisResult | null> => {
     try {
-      analysisState.value = {
-        isAnalyzing: true,
-        progress: 0,
-        estimatedTime: 30, // 預估 30 秒
-        error: null,
-        result: null,
+      // 重設分析狀態
+      resetAnalysisState()
+
+      analysisState.value.isAnalyzing = true
+      analysisState.value.estimatedTime = defaultStages.reduce((sum, stage) => sum + stage.duration, 0)
+
+      // 開始進度模擬
+      const progressInterval = simulateDetailedProgress()
+
+      try {
+        // 開始分析請求（使用認證 API）
+        const response: any = await authenticatedFetch('/api/financial-profile/analyze', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ profile }),
+        })
+
+        if (!response.success || !response.data) {
+          throw new Error(response.error?.message || 'AI 分析失敗')
+        }
+
+        // 完成進度
+        clearInterval(progressInterval)
+        completeAllStages()
+
+        analysisState.value.result = response.data
+        analysisState.value.isAnalyzing = false
+        analysisState.value.progress = 100
+        analysisState.value.estimatedTime = 0
+
+        return response.data
       }
-
-      // 開始分析請求（使用認證 API）
-      const response: any = await authenticatedFetch('/api/financial-profile/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ profile }),
-      })
-
-      if (!response.success || !response.data) {
-        throw new Error(response.error?.message || 'AI 分析失敗')
+      catch (analysisError) {
+        clearInterval(progressInterval)
+        throw analysisError
       }
-
-      analysisState.value.result = response.data
-      analysisState.value.isAnalyzing = false
-      analysisState.value.progress = 100
-
-      return response.data
     }
     catch (error: any) {
       analysisState.value.isAnalyzing = false
       analysisState.value.error = error.message || '分析過程中發生錯誤'
       analysisState.value.progress = 0
+      analysisState.value.estimatedTime = 0
+      analysisState.value.currentStage = '分析失敗'
 
       console.error('財務分析失敗:', error)
       return null
@@ -87,7 +154,72 @@ export const useFinancialAnalysis = () => {
   }
 
   /**
-   * 重置分析狀態
+   * 模擬詳細的分析進度（分階段進行）
+   */
+  const simulateDetailedProgress = () => {
+    let currentStageIndex = 0
+    let stageStartTime = Date.now()
+
+    const updateProgress = () => {
+      if (!analysisState.value.isAnalyzing || currentStageIndex >= analysisState.value.stages.length) {
+        return
+      }
+
+      const currentStage = analysisState.value.stages[currentStageIndex]
+      const elapsed = (Date.now() - stageStartTime) / 1000
+      const stageProgress = Math.min(1, elapsed / currentStage.duration)
+
+      // 更新當前階段狀態
+      analysisState.value.currentStage = currentStage.name
+
+      if (!currentStage.startedAt) {
+        currentStage.startedAt = new Date()
+      }
+
+      // 計算總進度
+      const completedStagesProgress = currentStageIndex * (100 / analysisState.value.stages.length)
+      const currentStageProgress = stageProgress * (100 / analysisState.value.stages.length)
+      analysisState.value.progress = Math.min(90, completedStagesProgress + currentStageProgress)
+
+      // 更新預估時間
+      const remainingStages = analysisState.value.stages.slice(currentStageIndex + 1)
+      const remainingTime = remainingStages.reduce((sum, stage) => sum + stage.duration, 0)
+      const currentStageRemainingTime = Math.max(0, currentStage.duration - elapsed)
+      analysisState.value.estimatedTime = Math.ceil(remainingTime + currentStageRemainingTime)
+
+      // 檢查是否完成當前階段
+      if (stageProgress >= 1) {
+        currentStage.completed = true
+        currentStage.completedAt = new Date()
+        currentStageIndex++
+        stageStartTime = Date.now()
+      }
+    }
+
+    const progressInterval = setInterval(updateProgress, 500)
+    updateProgress() // 立即執行一次
+
+    return progressInterval
+  }
+
+  /**
+   * 完成所有階段
+   */
+  const completeAllStages = () => {
+    analysisState.value.stages.forEach((stage) => {
+      if (!stage.completed) {
+        stage.completed = true
+        stage.completedAt = new Date()
+        if (!stage.startedAt) {
+          stage.startedAt = new Date()
+        }
+      }
+    })
+    analysisState.value.currentStage = '分析完成'
+  }
+
+  /**
+   * 重設分析狀態
    */
   const resetAnalysisState = () => {
     analysisState.value = {
@@ -96,8 +228,49 @@ export const useFinancialAnalysis = () => {
       estimatedTime: 0,
       error: null,
       result: null,
+      currentStage: '',
+      stages: defaultStages.map(stage => ({
+        ...stage,
+        completed: false,
+        startedAt: undefined,
+        completedAt: undefined,
+      })),
     }
   }
+
+  /**
+   * 獲取當前階段的詳細資訊
+   */
+  const getCurrentStageInfo = computed(() => {
+    const currentStage = analysisState.value.stages.find(stage =>
+      stage.name === analysisState.value.currentStage,
+    )
+
+    if (!currentStage) return null
+
+    return {
+      ...currentStage,
+      progressPercentage: currentStage.completed
+        ? 100
+        : (currentStage.startedAt
+            ? Math.min(100, ((Date.now() - currentStage.startedAt.getTime()) / 1000 / currentStage.duration) * 100)
+            : 0),
+    }
+  })
+
+  /**
+   * 獲取已完成的階段數量
+   */
+  const completedStagesCount = computed(() => {
+    return analysisState.value.stages.filter(stage => stage.completed).length
+  })
+
+  /**
+   * 獲取總階段數量
+   */
+  const totalStagesCount = computed(() => {
+    return analysisState.value.stages.length
+  })
 
   /**
    * 獲取用戶的歷史分析記錄
@@ -165,6 +338,25 @@ export const useFinancialAnalysis = () => {
     return Math.min(100, Math.max(0, Math.round(score)))
   }
 
+  /**
+   * 載入用戶最新的分析結果
+   */
+  const loadLatestAnalysisResult = async () => {
+    try {
+      const response: any = await authenticatedFetch('/api/financial-profile/latest')
+
+      if (response.success && response.data) {
+        analysisState.value.result = response.data
+        return response.data
+      }
+      return null
+    }
+    catch (error) {
+      console.error('載入最新分析結果失敗:', error)
+      return null
+    }
+  }
+
   return {
     // State
     analysisState: readonly(analysisState),
@@ -172,9 +364,12 @@ export const useFinancialAnalysis = () => {
     // Methods
     analyzeFinancialProfile,
     simulateAnalysisProgress,
+    simulateDetailedProgress,
     resetAnalysisState,
     getUserAnalysisHistory,
     calculateHealthScore,
+    loadLatestAnalysisResult,
+    completeAllStages,
 
     // Computed
     isAnalyzing: computed(() => analysisState.value.isAnalyzing),
@@ -182,5 +377,10 @@ export const useFinancialAnalysis = () => {
     estimatedTime: computed(() => analysisState.value.estimatedTime),
     error: computed(() => analysisState.value.error),
     result: computed(() => analysisState.value.result),
+    currentStage: computed(() => analysisState.value.currentStage),
+    stages: computed(() => analysisState.value.stages),
+    getCurrentStageInfo,
+    completedStagesCount,
+    totalStagesCount,
   }
 }

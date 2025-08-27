@@ -948,6 +948,8 @@ defineProps<Props>()
 const emit = defineEmits<{
   close: []
   complete: [profile: IFinancialProfile]
+  analysisComplete: [result: any]
+  analysisStarted: []
 }>()
 
 // =========================
@@ -1205,13 +1207,18 @@ const completeQuestionnaire = async () => {
 
     // 然後觸發 AI 分析
     try {
+      emit('analysisStarted')
+
       const analysisComposable = await import('~/composables/useFinancialAnalysis')
       const { analyzeFinancialProfile } = analysisComposable.useFinancialAnalysis()
 
-      // 開始 AI 分析 (異步執行，不阻塞完成流程)
-      await analyzeFinancialProfile(financialProfile.value)
+      // 開始 AI 分析
+      const analysisResult = await analyzeFinancialProfile(financialProfile.value)
 
-      console.log('AI 財務分析已完成')
+      if (analysisResult) {
+        console.log('AI 財務分析已完成')
+        emit('analysisComplete', analysisResult)
+      }
     }
     catch (error) {
       console.error('AI 分析過程中發生錯誤:', error)

@@ -118,29 +118,44 @@
           </div>
         </div>
 
-        <!-- AI 分析結果區塊 -->
-        <div v-if="hasProfile && analysisResult">
-          <FinancialPlanningResult :analysis-result="analysisResult" />
-        </div>
+        <!-- 歷史記錄區塊 -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div class="p-6 border-b border-gray-100">
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">
+              分析歷史記錄
+            </h2>
+            <p class="text-gray-600 text-sm">
+              查看您過去的財務分析報告
+            </p>
+          </div>
 
-        <!-- Phase 3 功能說明 -->
-        <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
-          <div class="flex items-start">
-            <div class="text-green-400 mr-3 mt-1">
-              ✅
-            </div>
-            <div>
-              <h3 class="text-green-900 font-medium mb-2">
-                Phase 3 - AI 智能分析已上線
-              </h3>
-              <ul class="text-green-800 text-sm space-y-1">
-                <li>• OpenAI GPT-4 驅動的智能財務分析</li>
-                <li>• 個人化投資建議和資產配置</li>
-                <li>• 預算規劃和儲蓄目標設定</li>
-                <li>• 分析結果 7 天有效期限制</li>
-                <li>• 完整的風險評估和財務健康度評分</li>
-              </ul>
-            </div>
+          <!-- AI 分析載入狀態 -->
+          <div
+            v-if="isAnalyzing"
+            class="p-8 text-center"
+          >
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4" />
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">
+              AI 正在分析您的財務狀況...
+            </h3>
+            <p class="text-gray-600">
+              這可能需要幾秒鐘的時間，請稍候
+            </p>
+          </div>
+
+          <!-- AI 分析結果區塊 -->
+          <div
+            v-if="currentAnalysisResult || analysisResult"
+            class="financial-result"
+          >
+            <FinancialPlanningResult
+              :analysis-result="currentAnalysisResult || analysisResult"
+            />
+          </div>
+
+          <!-- 歷史記錄列表 -->
+          <div v-if="!isAnalyzing">
+            <FinancialAnalysisHistory @select-record="handleRecordSelect" />
           </div>
         </div>
 
@@ -179,6 +194,8 @@
       :show="isModalOpen"
       @close="closeModal"
       @complete="handleQuestionnaireComplete"
+      @analysis-started="handleAnalysisStarted"
+      @analysis-complete="handleAnalysisComplete"
     />
   </div>
 </template>
@@ -224,7 +241,11 @@ const {
 
 // AI 分析功能
 const { useFinancialAnalysis } = await import('~/composables/useFinancialAnalysis')
-const { result: analysisResult } = useFinancialAnalysis()
+const { result: analysisResult, isAnalyzing, loadLatestAnalysisResult } = useFinancialAnalysis()
+
+// AI 分析狀態
+const currentAnalysisResult = ref(null)
+const showAnalysisResult = ref(false)
 
 // =========================
 // Computed
@@ -274,11 +295,64 @@ const handleQuestionnaireComplete = async (profileData: IFinancialProfile) => {
   }
 }
 
+const handleAnalysisStarted = () => {
+  console.log('🤖 AI 分析開始...')
+  showAnalysisResult.value = false
+}
+
+const handleAnalysisComplete = (result: any) => {
+  console.log('✅ AI 分析完成!', result)
+  currentAnalysisResult.value = result
+  showAnalysisResult.value = true
+  // 關閉問卷 modal
+  closeModal()
+
+  // 滾動到結果區域
+  nextTick(() => {
+    const resultElement = document.querySelector('.financial-result')
+    if (resultElement) {
+      resultElement.scrollIntoView({ behavior: 'smooth' })
+    }
+  })
+}
+
+const handleRecordSelect = async (record: any) => {
+  console.log('📋 選擇歷史記錄:', record)
+  // 載入完整的分析結果
+  try {
+    const response: any = await $fetch(`/api/financial-profile/${record.id}`)
+
+    if (response.success && response.data) {
+      console.log('✅ 成功載入歷史記錄詳情:', response.data)
+      currentAnalysisResult.value = response.data
+      showAnalysisResult.value = true
+
+      // 滾動到結果區域
+      nextTick(() => {
+        const resultElement = document.querySelector('.financial-result')
+        if (resultElement) {
+          resultElement.scrollIntoView({ behavior: 'smooth' })
+        }
+      })
+    }
+    else {
+      console.error('⚠️ 無效的回應格式:', response)
+    }
+  }
+  catch (error) {
+    console.error('❌ 載入歷史記錄詳情失敗:', error)
+  }
+}
+
 const handleDeleteProfile = async () => {
   if (confirm('確定要清除問卷資料嗎？此操作無法復原。')) {
     const result = await deleteProfile()
 
     if (result.success) {
+      // 清除所有分析結果狀態
+      currentAnalysisResult.value = null
+      showAnalysisResult.value = false
+
       console.log('問卷資料已清除')
     }
   }
@@ -288,7 +362,10 @@ const handleDeleteProfile = async () => {
 // Lifecycle
 // =========================
 
-onMounted(() => {
+onMounted(async () => {
   // 頁面載入完成，資料已在 composable 中自動載入
+
+  // 載入最新的分析結果
+  await loadLatestAnalysisResult()
 })
 </script>

@@ -81,11 +81,11 @@ export default defineEventHandler(async (event): Promise<AnalysisResponse> => {
     console.log('🔍 檢查用戶上下文...')
     console.log('📋 Event context:', event.context)
     console.log('👤 User context:', event.context.userContext)
-    
+
     const user = ensureUserContext(event)
-    console.log('✅ 用戶認證成功:', { 
-      userId: user._id ? user._id.toString() : user.id, 
-      email: user.email 
+    console.log('✅ 用戶認證成功:', {
+      userId: user._id ? user._id.toString() : user.id,
+      email: user.email,
     })
 
     // 解析請求資料
@@ -134,7 +134,7 @@ export default defineEventHandler(async (event): Promise<AnalysisResponse> => {
       success: analysisResult.success,
       data: analysisResult.data,
       usage: analysisResult.usage,
-      error: analysisResult.error
+      error: analysisResult.error,
     })
 
     if (!analysisResult.success) {
@@ -151,7 +151,7 @@ export default defineEventHandler(async (event): Promise<AnalysisResponse> => {
 
     // 解析和結構化 AI 回應
     const structuredAnalysis = parseAIResponse(rawAnalysisText)
-    
+
     console.log('🏗️ 結構化分析結果:', JSON.stringify(structuredAnalysis, null, 2))
 
     // 準備儲存到資料庫的分析結果
@@ -189,7 +189,7 @@ export default defineEventHandler(async (event): Promise<AnalysisResponse> => {
         model: 'gpt-3.5-turbo',
       },
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7天後過期
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 面試展示用：1年後過期（實際上不會過期）
       status: 'active',
     }
 
