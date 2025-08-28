@@ -244,7 +244,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import type { IFinancialProfile } from '~/lib/models/financial-profile'
-import type { FinancialAnalysisResult } from '~/lib/models/financial-analysis'
+// import type { FinancialAnalysisResult } from '~/lib/models/financial-analysis' // 保留未來使用
 import { useFinancialProfile } from '~/composables/useFinancialProfile'
 
 // =========================

@@ -88,24 +88,44 @@ export function calculateRiskTolerance(assessment: RiskAssessment): number {
 
   // 風險承受度評分
   switch (assessment.riskTolerance) {
-    case 'conservative': score += 1; break
-    case 'moderate': score += 3; break
-    case 'aggressive': score += 5; break
+    case 'conservative':
+      score += 1
+      break
+    case 'moderate':
+      score += 3
+      break
+    case 'aggressive':
+      score += 5
+      break
   }
 
   // 投資經驗評分
   switch (assessment.investmentExperience) {
-    case 'none': score += 1; break
-    case 'beginner': score += 2; break
-    case 'intermediate': score += 4; break
-    case 'advanced': score += 5; break
+    case 'none':
+      score += 1
+      break
+    case 'beginner':
+      score += 2
+      break
+    case 'intermediate':
+      score += 4
+      break
+    case 'advanced':
+      score += 5
+      break
   }
 
   // 時間視野評分
   switch (assessment.timeHorizon) {
-    case 'short': score += 1; break
-    case 'medium': score += 3; break
-    case 'long': score += 5; break
+    case 'short':
+      score += 1
+      break
+    case 'medium':
+      score += 3
+      break
+    case 'long':
+      score += 5
+      break
   }
 
   // 波動容忍度評分

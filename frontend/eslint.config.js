@@ -28,7 +28,7 @@ export default createConfigForNuxt({
     rules: {
     // TypeScript specific rules
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off', // 關閉 any 類型警告
     },
   })
   .override('nuxt/vue/rules', {

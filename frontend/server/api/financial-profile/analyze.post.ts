@@ -509,7 +509,7 @@ function parseAIResponse(rawResponse: string): {
                 break
               }
             }
-            catch (e) {
+            catch {
               console.log('⚠️ 正規表達式 JSON 解析失敗')
             }
           }
@@ -628,11 +628,13 @@ function generateBudgetSuggestions(profile: IFinancialProfile) {
       },
     ],
     savingsTarget: Math.round(income * (savingsPercentage / 100)),
-    debtPayoffPlan: hasDebt && debtAmount > 0 ? {
-      monthlyPayment: Math.round(income * 0.15), // 建議15%收入還債
-      timeToPayoff: Math.ceil(debtAmount / (income * 0.15)),
-      totalInterest: Math.round(debtAmount * 0.1), // 估算利息
-    } : undefined,
+    debtPayoffPlan: hasDebt && debtAmount > 0
+      ? {
+          monthlyPayment: Math.round(income * 0.15), // 建議15%收入還債
+          timeToPayoff: Math.ceil(debtAmount / (income * 0.15)),
+          totalInterest: Math.round(debtAmount * 0.1), // 估算利息
+        }
+      : undefined,
   }
 }
 
@@ -701,7 +703,7 @@ function mapRiskProfile(riskTolerance: string): 'conservative' | 'moderate' | 'a
  */
 function generateGoalStrategies(profile: IFinancialProfile) {
   return profile.goals.map((goal) => {
-    const monthlyRequired = goal.targetAmount / goal.timeframe
+    // const monthlyRequired = goal.targetAmount / goal.timeframe // 保留未來使用
     const currentAmount = goal.currentAmount || 0
     const remaining = goal.targetAmount - currentAmount
     const monthlyForRemaining = remaining / goal.timeframe
