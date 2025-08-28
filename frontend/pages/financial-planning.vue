@@ -160,7 +160,12 @@
 
           <!-- 歷史記錄列表 -->
           <div v-if="!isAnalyzing">
-            <FinancialAnalysisHistory @select-record="handleRecordSelect" />
+            <FinancialAnalysisHistory
+              ref="historyComponent"
+              :selected-record-id="selectedRecordId"
+              :is-loading-record="isLoadingRecord"
+              @select-record="handleRecordSelect"
+            />
           </div>
 
           <!-- AI 分析載入狀態 -->
@@ -287,6 +292,12 @@ const showAnalysisResult = ref(false)
 // 歷史記錄組件引用
 const historyComponent = ref<{ loadHistory: () => Promise<void> } | null>(null)
 
+// 當前選中的記錄 ID
+const selectedRecordId = ref<string | null>(null)
+
+// API 請求載入狀態
+const isLoadingRecord = ref(false)
+
 // 修復 SSR 水合問題
 const isClientSide = ref(false)
 
@@ -366,6 +377,11 @@ const handleAnalysisComplete = (result: any) => {
 
 const handleRecordSelect = async (record: any) => {
   console.log('📋 選擇歷史記錄:', record)
+
+  // 設定載入狀態和選中狀態
+  isLoadingRecord.value = true
+  selectedRecordId.value = record.id
+
   // 載入完整的分析結果
   try {
     const response: any = await $fetch(`/api/financial-profile/${record.id}`)
@@ -385,10 +401,15 @@ const handleRecordSelect = async (record: any) => {
     }
     else {
       console.error('⚠️ 無效的回應格式:', response)
+      selectedRecordId.value = null
     }
   }
   catch (error) {
     console.error('❌ 載入歷史記錄詳情失敗:', error)
+    selectedRecordId.value = null
+  }
+  finally {
+    isLoadingRecord.value = false
   }
 }
 

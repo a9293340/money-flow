@@ -29,7 +29,7 @@
                   分析報告
                 </div>
                 <div class="text-xs opacity-75">
-                  {{ formatExpirationDate(currentResult.expiresAt.toString()) }}
+                  {{ currentResult.expiresAt ? formatExpirationDate(currentResult.expiresAt.toString()) : '未設定' }}
                 </div>
               </div>
             </div>

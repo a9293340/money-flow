@@ -86,10 +86,45 @@
       <div
         v-for="record in records"
         :key="record.id"
-        class="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-        :class="getRecordBorderClass(record)"
+        class="border rounded-lg p-4 hover:shadow-md transition-all cursor-pointer relative"
+        :class="[
+          getRecordBorderClass(record),
+          {
+            'ring-2 ring-blue-500 border-blue-400 bg-blue-50': props.selectedRecordId === record.id,
+            'opacity-60': props.isLoadingRecord && props.selectedRecordId === record.id,
+          },
+        ]"
         @click="$emit('select-record', record)"
       >
+        <!-- 當前閱覽標示 -->
+        <div
+          v-if="props.selectedRecordId === record.id"
+          class="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center shadow-md"
+        >
+          <svg
+            v-if="props.isLoadingRecord"
+            class="animate-spin -ml-1 mr-1 h-3 w-3 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            />
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          <span v-else>✓</span>
+          {{ props.isLoadingRecord ? '載入中' : '當前閱覽' }}
+        </div>
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center space-x-3">
             <!-- 狀態指示 -->
@@ -226,9 +261,15 @@ interface AnalysisRecord {
 
 interface Props {
   autoLoad?: boolean
+  selectedRecordId?: string | null
+  isLoadingRecord?: boolean
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  autoLoad: true,
+  selectedRecordId: null,
+  isLoadingRecord: false,
+})
 
 defineEmits<{
   'select-record': [record: AnalysisRecord]
