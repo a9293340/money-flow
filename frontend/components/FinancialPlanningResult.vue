@@ -742,7 +742,6 @@ const feedbackComment = ref('')
 const isSubmittingFeedback = ref(false)
 const isEditingFeedback = ref(false)
 
-
 // 格式化過期日期
 const formatExpirationDate = (dateString: string) => {
   const date = new Date(dateString)
@@ -753,7 +752,6 @@ const formatExpirationDate = (dateString: string) => {
     minute: '2-digit',
   })
 }
-
 
 // 觸發重新分析
 const triggerReanalysis = () => {

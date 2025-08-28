@@ -353,6 +353,11 @@ const getRiskProfileText = (profile: string) => {
   }
 }
 
+// 暴露給父組件使用
+defineExpose({
+  loadHistory,
+})
+
 // 生命週期
 onMounted(() => {
   loadHistory()

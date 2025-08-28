@@ -22,73 +22,91 @@
               <h2 class="text-lg font-semibold text-gray-900">
                 問卷狀態
               </h2>
+              <ClientOnly>
+                <div
+                  class="px-3 py-1 rounded-full text-sm font-medium"
+                  :class="{
+                    'bg-green-100 text-green-800': hasProfile && profileSummary?.completionRate === 100,
+                    'bg-yellow-100 text-yellow-800': hasProfile && (profileSummary?.completionRate ?? 0) < 100,
+                    'bg-gray-100 text-gray-800': !hasProfile,
+                  }"
+                >
+                  {{ getStatusText() }}
+                </div>
+                <template #fallback>
+                  <div class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                    載入中...
+                  </div>
+                </template>
+              </ClientOnly>
+            </div>
+
+            <ClientOnly>
               <div
-                class="px-3 py-1 rounded-full text-sm font-medium"
-                :class="{
-                  'bg-green-100 text-green-800': hasProfile && profileSummary?.completionRate === 100,
-                  'bg-yellow-100 text-yellow-800': hasProfile && (profileSummary?.completionRate ?? 0) < 100,
-                  'bg-gray-100 text-gray-800': !hasProfile,
-                }"
+                v-if="hasProfile && profileSummary"
+                class="space-y-3"
               >
-                {{ getStatusText() }}
-              </div>
-            </div>
+                <div>
+                  <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600">完成度</span>
+                    <span class="font-medium">{{ profileSummary.completionRate }}%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      :style="{ width: `${profileSummary.completionRate}%` }"
+                    />
+                  </div>
+                </div>
 
-            <div
-              v-if="hasProfile && profileSummary"
-              class="space-y-3"
-            >
-              <div>
-                <div class="flex justify-between text-sm mb-1">
-                  <span class="text-gray-600">完成度</span>
-                  <span class="font-medium">{{ profileSummary.completionRate }}%</span>
+                <div class="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
+                  <div class="text-center">
+                    <div class="text-2xl font-bold text-gray-900">
+                      {{ profileSummary.savingsRate }}%
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      儲蓄率
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-2xl font-bold text-gray-900">
+                      {{ getRiskLevelText(profileSummary.riskLevel) }}
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      風險偏好
+                    </div>
+                  </div>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    :style="{ width: `${profileSummary.completionRate}%` }"
-                  />
-                </div>
-              </div>
 
-              <div class="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
-                <div class="text-center">
-                  <div class="text-2xl font-bold text-gray-900">
-                    {{ profileSummary.savingsRate }}%
-                  </div>
-                  <div class="text-xs text-gray-500">
-                    儲蓄率
-                  </div>
-                </div>
-                <div class="text-center">
-                  <div class="text-2xl font-bold text-gray-900">
-                    {{ getRiskLevelText(profileSummary.riskLevel) }}
-                  </div>
-                  <div class="text-xs text-gray-500">
-                    風險偏好
-                  </div>
+                <div
+                  v-if="profileSummary.lastUpdated"
+                  class="text-xs text-gray-500 pt-2"
+                >
+                  最後更新：{{ formatDate(profileSummary.lastUpdated) }}
                 </div>
               </div>
 
               <div
-                v-if="profileSummary.lastUpdated"
-                class="text-xs text-gray-500 pt-2"
+                v-else
+                class="text-center py-4"
               >
-                最後更新：{{ formatDate(profileSummary.lastUpdated) }}
+                <div class="text-gray-400 mb-2">
+                  📋
+                </div>
+                <p class="text-sm text-gray-600">
+                  尚未完成問卷評估
+                </p>
               </div>
-            </div>
 
-            <div
-              v-else
-              class="text-center py-4"
-            >
-              <div class="text-gray-400 mb-2">
-                📋
-              </div>
-              <p class="text-sm text-gray-600">
-                尚未完成問卷評估
-              </p>
-            </div>
+              <template #fallback>
+                <div class="text-center py-4">
+                  <div class="animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-3/4 mb-2 mx-auto" />
+                    <div class="h-4 bg-gray-200 rounded w-1/2 mx-auto" />
+                  </div>
+                </div>
+              </template>
+            </ClientOnly>
           </div>
 
           <!-- 快速操作 -->
@@ -98,22 +116,33 @@
             </h2>
 
             <div class="space-y-3">
-              <button
-                :disabled="isLoading"
-                class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium py-3 px-4 rounded-md transition-colors"
-                @click="openModal"
-              >
-                {{ hasProfile ? '重新評估' : '開始問卷評估' }}
-              </button>
+              <ClientOnly>
+                <button
+                  :disabled="isLoading"
+                  class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium py-3 px-4 rounded-md transition-colors"
+                  @click="openModal"
+                >
+                  {{ hasProfile ? '重新評估' : '開始問卷評估' }}
+                </button>
 
-              <button
-                v-if="hasProfile"
-                :disabled="isLoading"
-                class="w-full bg-red-50 hover:bg-red-100 disabled:bg-gray-300 text-red-700 font-medium py-2 px-4 rounded-md border border-red-200 transition-colors"
-                @click="handleDeleteProfile"
-              >
-                清除問卷資料
-              </button>
+                <button
+                  v-if="hasProfile"
+                  :disabled="isLoading"
+                  class="w-full bg-red-50 hover:bg-red-100 disabled:bg-gray-300 text-red-700 font-medium py-2 px-4 rounded-md border border-red-200 transition-colors"
+                  @click="handleDeleteProfile"
+                >
+                  清除問卷資料
+                </button>
+
+                <template #fallback>
+                  <button
+                    disabled
+                    class="w-full bg-gray-300 text-gray-500 font-medium py-3 px-4 rounded-md transition-colors"
+                  >
+                    載入中...
+                  </button>
+                </template>
+              </ClientOnly>
             </div>
           </div>
         </div>
@@ -122,17 +151,22 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
           <div class="p-6 border-b border-gray-100">
             <h2 class="text-xl font-semibold text-gray-900 mb-2">
-              分析歷史記錄
+              財務分析中心
             </h2>
             <p class="text-gray-600 text-sm">
-              查看您過去的財務分析報告
+              查看您的分析結果和歷史記錄
             </p>
+          </div>
+
+          <!-- 歷史記錄列表 -->
+          <div v-if="!isAnalyzing">
+            <FinancialAnalysisHistory @select-record="handleRecordSelect" />
           </div>
 
           <!-- AI 分析載入狀態 -->
           <div
             v-if="isAnalyzing"
-            class="p-8 text-center"
+            class="p-8 text-center border-t border-gray-200"
           >
             <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4" />
             <h3 class="text-lg font-semibold text-gray-900 mb-2">
@@ -146,16 +180,19 @@
           <!-- AI 分析結果區塊 -->
           <div
             v-if="currentAnalysisResult || analysisResult"
-            class="financial-result"
+            class="financial-result border-t border-gray-200"
           >
+            <div class="p-6 bg-blue-50 border-b border-blue-200">
+              <h3 class="text-lg font-semibold text-blue-900 mb-1">
+                AI 分析報告
+              </h3>
+              <p class="text-blue-700 text-sm">
+                基於您的財務問卷，為您量身定制的財務規劃建議
+              </p>
+            </div>
             <FinancialPlanningResult
               :analysis-result="currentAnalysisResult || analysisResult"
             />
-          </div>
-
-          <!-- 歷史記錄列表 -->
-          <div v-if="!isAnalyzing">
-            <FinancialAnalysisHistory @select-record="handleRecordSelect" />
           </div>
         </div>
 
@@ -247,6 +284,12 @@ const { result: analysisResult, isAnalyzing, loadLatestAnalysisResult } = useFin
 const currentAnalysisResult = ref(null)
 const showAnalysisResult = ref(false)
 
+// 歷史記錄組件引用
+const historyComponent = ref<{ loadHistory: () => Promise<void> } | null>(null)
+
+// 修復 SSR 水合問題
+const isClientSide = ref(false)
+
 // =========================
 // Computed
 // =========================
@@ -307,8 +350,13 @@ const handleAnalysisComplete = (result: any) => {
   // 關閉問卷 modal
   closeModal()
 
-  // 滾動到結果區域
-  nextTick(() => {
+  // 刷新歷史記錄列表
+  nextTick(async () => {
+    if (historyComponent.value?.loadHistory) {
+      await historyComponent.value.loadHistory()
+    }
+
+    // 滾動到結果區域
     const resultElement = document.querySelector('.financial-result')
     if (resultElement) {
       resultElement.scrollIntoView({ behavior: 'smooth' })
@@ -363,6 +411,9 @@ const handleDeleteProfile = async () => {
 // =========================
 
 onMounted(async () => {
+  // 修復 SSR 水合問題
+  isClientSide.value = true
+
   // 頁面載入完成，資料已在 composable 中自動載入
 
   // 載入最新的分析結果
