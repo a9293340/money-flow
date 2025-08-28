@@ -234,10 +234,9 @@
     <!-- 問卷 Modal -->
     <QuestionnaireModal
       :show="isModalOpen"
-      @close="closeModal"
+      :is-analyzing="isAnalyzing"
+      @close="handleModalClose"
       @complete="handleQuestionnaireComplete"
-      @analysis-started="handleAnalysisStarted"
-      @analysis-complete="handleAnalysisComplete"
     />
   </div>
 </template>
@@ -283,11 +282,12 @@ const {
 
 // AI 分析功能
 const { useFinancialAnalysis } = await import('~/composables/useFinancialAnalysis')
-const { result: analysisResult, isAnalyzing, loadLatestAnalysisResult } = useFinancialAnalysis()
+const { result: analysisResult, loadLatestAnalysisResult } = useFinancialAnalysis()
 
-// AI 分析狀態
+// 簡單的 AI 分析狀態
 const currentAnalysisResult = ref(null)
 const showAnalysisResult = ref(false)
+const isAnalyzing = ref(false) // 簡單的 loading 狀態
 
 // 歷史記錄組件引用
 const historyComponent = ref<{ loadHistory: () => Promise<void> } | null>(null)
@@ -341,39 +341,70 @@ const formatDate = (dateString: string | Date) => {
 }
 
 const handleQuestionnaireComplete = async (profileData: IFinancialProfile) => {
-  const result = await saveProfile(profileData)
+  console.log('🎯 問卷完成，開始處理...')
 
-  if (result.success) {
-    // 顯示成功訊息 (可以用 toast 或其他方式)
-    console.log('問卷完成並儲存成功！', result.data)
+  // 1. 保存問卷資料
+  const result = await saveProfile(profileData)
+  if (!result.success) {
+    console.error('❌ 問卷保存失敗')
+    return
+  }
+
+  console.log('✅ 問卷保存成功，開始 AI 分析...')
+
+  // 2. 設置 loading 狀態
+  isAnalyzing.value = true
+
+  try {
+    // 3. 調用 AI 分析 API
+    const response: any = await $fetch('/api/financial-profile/analyze', {
+      method: 'POST',
+      body: {
+        profile: profileData, // API 期待的格式
+      },
+    })
+
+    if (response.success && response.data) {
+      console.log('✅ AI 分析完成!', response.data)
+
+      // 4. 設置分析結果
+      currentAnalysisResult.value = {
+        ...response.data,
+        id: Date.now().toString(), // 臨時 ID
+        createdAt: new Date().toISOString(),
+      }
+
+      showAnalysisResult.value = true
+
+      // 5. 刷新歷史記錄
+      if (historyComponent.value?.loadHistory) {
+        await historyComponent.value.loadHistory()
+      }
+    }
+    else {
+      console.error('❌ AI 分析失敗:', response)
+    }
+  }
+  catch (error) {
+    console.error('❌ AI 分析 API 錯誤:', error)
+  }
+  finally {
+    // 6. 關閉 loading 和 modal
+    isAnalyzing.value = false
+    closeModal()
   }
 }
 
-const handleAnalysisStarted = () => {
-  console.log('🤖 AI 分析開始...')
-  showAnalysisResult.value = false
-}
-
-const handleAnalysisComplete = (result: any) => {
-  console.log('✅ AI 分析完成!', result)
-  currentAnalysisResult.value = result
-  showAnalysisResult.value = true
-  // 關閉問卷 modal
+const handleModalClose = () => {
+  // 如果正在分析中，不允許關閉模態框
+  if (isAnalyzing.value) {
+    console.log('AI 分析進行中，無法關閉問卷')
+    return
+  }
   closeModal()
-
-  // 刷新歷史記錄列表
-  nextTick(async () => {
-    if (historyComponent.value?.loadHistory) {
-      await historyComponent.value.loadHistory()
-    }
-
-    // 滾動到結果區域
-    const resultElement = document.querySelector('.financial-result')
-    if (resultElement) {
-      resultElement.scrollIntoView({ behavior: 'smooth' })
-    }
-  })
 }
+
+// 簡化：移除 handleAnalysisComplete，邏輯合併到 handleQuestionnaireComplete
 
 const handleRecordSelect = async (record: any) => {
   console.log('📋 選擇歷史記錄:', record)
@@ -438,6 +469,11 @@ onMounted(async () => {
   // 頁面載入完成，資料已在 composable 中自動載入
 
   // 載入最新的分析結果
-  await loadLatestAnalysisResult()
+  const latestResult = await loadLatestAnalysisResult()
+
+  // 如果有最新的分析結果，設定 selectedRecordId 以顯示"當前預覽"指示器
+  if (latestResult && latestResult.id) {
+    selectedRecordId.value = latestResult.id
+  }
 })
 </script>

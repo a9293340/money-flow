@@ -1,6 +1,26 @@
 <template>
+  <!-- AI 分析載入遮罩 -->
   <div
-    v-if="show"
+    v-if="show && props.isAnalyzing"
+    class="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"
+  >
+    <div class="text-center">
+      <!-- 轉圈圈動畫 -->
+      <div class="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mx-auto mb-6" />
+
+      <!-- 載入文字 -->
+      <h3 class="text-xl font-semibold text-white mb-2">
+        AI 正在分析您的財務狀況
+      </h3>
+      <p class="text-white text-opacity-80">
+        這可能需要幾秒鐘的時間，請稍候...
+      </p>
+    </div>
+  </div>
+
+  <!-- 問卷模態框 -->
+  <div
+    v-if="show && !props.isAnalyzing"
     class="fixed inset-0 z-50 overflow-y-auto"
   >
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -112,8 +132,9 @@
                   :total-steps="totalSteps"
                   :step-title="currentStepConfig.title"
                   :step-description="currentStepConfig.description"
-                  :can-proceed="canProceedToNextStep"
+                  :can-proceed="canProceedToNextStep && !props.isAnalyzing"
                   :is-last-step="isLastStep"
+                  :is-analyzing="props.isAnalyzing"
                   @next-step="nextStep"
                   @previous-step="previousStep"
                   @complete="completeQuestionnaire"
@@ -941,9 +962,10 @@ import type { IFinancialProfile, QuestionnaireStep } from '~/lib/models/financia
 
 interface Props {
   show: boolean
+  isAnalyzing?: boolean
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
@@ -1202,28 +1224,8 @@ const completeQuestionnaire = async () => {
     financialProfile.value.completionDate = new Date()
     financialProfile.value.lastUpdated = new Date()
 
-    // 先 emit 完成事件
+    // 只 emit 完成事件，讓父組件處理 AI 分析
     emit('complete', financialProfile.value)
-
-    // 然後觸發 AI 分析
-    try {
-      emit('analysisStarted')
-
-      const analysisComposable = await import('~/composables/useFinancialAnalysis')
-      const { analyzeFinancialProfile } = analysisComposable.useFinancialAnalysis()
-
-      // 開始 AI 分析
-      const analysisResult = await analyzeFinancialProfile(financialProfile.value)
-
-      if (analysisResult) {
-        console.log('AI 財務分析已完成')
-        emit('analysisComplete', analysisResult)
-      }
-    }
-    catch (error) {
-      console.error('AI 分析過程中發生錯誤:', error)
-      // 不影響問卷完成流程，只記錄錯誤
-    }
   }
 }
 
@@ -1294,6 +1296,11 @@ const jumpToStep = (step: number) => {
 // 保存進度
 const saveProgress = () => {
   try {
+    if (typeof window === 'undefined' || !window.sessionStorage) {
+      console.warn('sessionStorage 不可用')
+      return
+    }
+
     const progressData = {
       ...financialProfile.value,
       currentStep: currentStep.value,
@@ -1313,6 +1320,11 @@ const saveProgress = () => {
 // 載入進度
 const loadProgress = () => {
   try {
+    if (typeof window === 'undefined' || !window.sessionStorage) {
+      console.warn('sessionStorage 不可用，跳過載入進度')
+      return
+    }
+
     const saved = sessionStorage.getItem('questionnaireProgress')
     if (saved) {
       const progressData = JSON.parse(saved)
@@ -1325,6 +1337,8 @@ const loadProgress = () => {
   }
 }
 
-// 初始化時載入進度
-loadProgress()
+// 初始化時載入進度 - 只在客戶端執行
+if (typeof window !== 'undefined') {
+  loadProgress()
+}
 </script>

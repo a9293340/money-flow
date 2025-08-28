@@ -230,9 +230,9 @@
           <div class="mr-6">
             <div
               class="text-4xl font-bold mb-1"
-              :class="getScoreColor(currentResult.analysis.healthScore)"
+              :class="getScoreColor(currentResult.analysis?.healthScore || 0)"
             >
-              {{ currentResult.analysis.healthScore }}
+              {{ currentResult.analysis?.healthScore || 0 }}
             </div>
             <div class="text-sm text-gray-500">
               財務健康度
@@ -242,8 +242,8 @@
             <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
               <div
                 class="h-4 rounded-full transition-all duration-1000"
-                :class="getScoreBg(currentResult.analysis.healthScore)"
-                :style="{ width: `${currentResult.analysis.healthScore}%` }"
+                :class="getScoreBg(currentResult.analysis?.healthScore || 0)"
+                :style="{ width: `${currentResult.analysis?.healthScore || 0}%` }"
               />
             </div>
             <div class="flex justify-between text-xs text-gray-500">
@@ -259,7 +259,7 @@
           </h3>
           <div class="text-gray-700 leading-relaxed space-y-3">
             <div
-              v-for="(paragraph, index) in formatSummary(currentResult.analysis.summary)"
+              v-for="(paragraph, index) in formatSummary(currentResult.analysis?.summary || '')"
               :key="index"
               class="text-sm"
               v-html="paragraph"
@@ -334,7 +334,7 @@
             </h3>
             <div class="space-y-3">
               <div
-                v-for="category in currentResult.budgetSuggestions.categories"
+                v-for="category in (currentResult.budgetSuggestions?.categories || [])"
                 :key="category.name"
                 class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
               >
@@ -376,17 +376,17 @@
               <div class="flex items-center justify-between mb-2">
                 <span class="text-green-800 font-medium">建議月儲蓄</span>
                 <span class="text-2xl font-bold text-green-900">
-                  ${{ (currentResult.budgetSuggestions.savingsTarget || 0).toLocaleString() }}
+                  ${{ (currentResult.budgetSuggestions?.savingsTarget || 0).toLocaleString() }}
                 </span>
               </div>
               <div class="text-sm text-green-700">
-                約佔收入的 {{ Math.round((currentResult.budgetSuggestions.savingsTarget / currentResult.budgetSuggestions.monthlyBudget) * 100) }}%
+                約佔收入的 {{ Math.round(((currentResult.budgetSuggestions?.savingsTarget || 0) / (currentResult.budgetSuggestions?.monthlyBudget || 1)) * 100) }}%
               </div>
             </div>
 
             <!-- 負債還款計劃 -->
             <div
-              v-if="currentResult.budgetSuggestions.debtPayoffPlan"
+              v-if="currentResult.budgetSuggestions?.debtPayoffPlan"
               class="bg-orange-50 rounded-lg p-4"
             >
               <h4 class="font-medium text-orange-900 mb-3">
@@ -396,19 +396,19 @@
                 <div class="flex justify-between">
                   <span class="text-orange-700">建議月還款</span>
                   <span class="font-semibold text-orange-900">
-                    ${{ (currentResult.budgetSuggestions.debtPayoffPlan?.monthlyPayment || 0).toLocaleString() }}
+                    ${{ (currentResult.budgetSuggestions?.debtPayoffPlan?.monthlyPayment || 0).toLocaleString() }}
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-orange-700">預計還清時間</span>
                   <span class="font-semibold text-orange-900">
-                    {{ currentResult.budgetSuggestions.debtPayoffPlan.timeToPayoff }} 個月
+                    {{ currentResult.budgetSuggestions?.debtPayoffPlan?.timeToPayoff || 0 }} 個月
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-orange-700">總利息支出</span>
                   <span class="font-semibold text-orange-900">
-                    ${{ (currentResult.budgetSuggestions.debtPayoffPlan?.totalInterest || 0).toLocaleString() }}
+                    ${{ (currentResult.budgetSuggestions?.debtPayoffPlan?.totalInterest || 0).toLocaleString() }}
                   </span>
                 </div>
               </div>
@@ -429,7 +429,7 @@
             </h3>
             <div class="space-y-3">
               <div
-                v-for="allocation in currentResult.investmentAdvice.recommendedAllocation"
+                v-for="allocation in (currentResult.investmentAdvice?.recommendedAllocation || [])"
                 :key="allocation.type"
                 class="border rounded-lg p-4"
               >
@@ -462,7 +462,7 @@
               <div class="flex items-center justify-between mb-2">
                 <span class="text-purple-800 font-medium">建議月投資金額</span>
                 <span class="text-2xl font-bold text-purple-900">
-                  ${{ (currentResult.investmentAdvice.monthlyInvestmentSuggestion || 0).toLocaleString() }}
+                  ${{ (currentResult.investmentAdvice?.monthlyInvestmentSuggestion || 0).toLocaleString() }}
                 </span>
               </div>
             </div>
@@ -475,19 +475,19 @@
                 <div class="flex justify-between">
                   <span class="text-gray-600">保守型策略</span>
                   <span class="font-semibold text-gray-900">
-                    {{ currentResult.investmentAdvice.expectedReturns.conservative }}%
+                    {{ currentResult.investmentAdvice?.expectedReturns?.conservative || '未設定' }}%
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">平衡型策略</span>
                   <span class="font-semibold text-gray-900">
-                    {{ currentResult.investmentAdvice.expectedReturns.moderate }}%
+                    {{ currentResult.investmentAdvice?.expectedReturns?.moderate || '未設定' }}%
                   </span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-gray-600">積極型策略</span>
                   <span class="font-semibold text-gray-900">
-                    {{ currentResult.investmentAdvice.expectedReturns.aggressive }}%
+                    {{ currentResult.investmentAdvice?.expectedReturns?.aggressive || '未設定' }}%
                   </span>
                 </div>
               </div>
@@ -664,21 +664,21 @@
                   <span class="mr-2">評分：</span>
                   <div class="flex items-center">
                     <span
-                      v-for="star in currentResult.feedback.rating"
+                      v-for="star in (currentResult.feedback?.rating || 0)"
                       :key="star"
                       class="text-yellow-400"
                     >⭐</span>
                   </div>
-                  <span class="ml-2">{{ getRatingText(currentResult.feedback.rating) }}</span>
+                  <span class="ml-2">{{ getRatingText(currentResult.feedback?.rating || 0) }}</span>
                 </div>
-                <div v-if="currentResult.feedback.helpful !== undefined">
-                  有用性：{{ currentResult.feedback.helpful ? '👍 有用' : '👎 沒用' }}
+                <div v-if="currentResult.feedback?.helpful !== undefined">
+                  有用性：{{ currentResult.feedback?.helpful ? '👍 有用' : '👎 沒用' }}
                 </div>
-                <div v-if="currentResult.feedback.comments">
-                  意見：{{ currentResult.feedback.comments }}
+                <div v-if="currentResult.feedback?.comments">
+                  意見：{{ currentResult.feedback?.comments }}
                 </div>
                 <div class="text-xs text-green-600 mt-2">
-                  提交時間：{{ formatDate(currentResult.feedback.feedbackAt.toString()) }}
+                  提交時間：{{ currentResult.feedback?.feedbackAt ? formatDate(currentResult.feedback.feedbackAt.toString()) : '未設定' }}
                 </div>
               </div>
             </div>
@@ -916,9 +916,9 @@ const editExistingFeedback = () => {
   if (!currentResult.value?.feedback) return
 
   // 載入現有反饋資料到表單
-  selectedRating.value = currentResult.value.feedback.rating
-  isHelpful.value = currentResult.value.feedback.helpful ?? null
-  feedbackComment.value = currentResult.value.feedback.comments || ''
+  selectedRating.value = currentResult.value.feedback?.rating || 0
+  isHelpful.value = currentResult.value.feedback?.helpful ?? null
+  feedbackComment.value = currentResult.value.feedback?.comments || ''
   isEditingFeedback.value = true
 
   // 暫時移除反饋顯示，讓用戶可以編輯

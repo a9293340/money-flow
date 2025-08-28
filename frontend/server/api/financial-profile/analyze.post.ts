@@ -19,7 +19,13 @@ interface AnalysisRequest {
 interface AnalysisResponse {
   success: boolean
   data?: {
-    analysis: string
+    analysis: {
+      summary: string
+      healthScore: number
+      riskProfile: string
+      healthGrade?: string
+      scoreBreakdown?: any
+    }
     recommendations: Array<{
       title: string
       description: string
@@ -52,7 +58,14 @@ interface AnalysisResponse {
         percentage: number
         reasoning: string
       }>
+      monthlyInvestmentSuggestion?: number
+      expectedReturns?: {
+        conservative: number
+        moderate: number
+        aggressive: number
+      }
     }
+    goalStrategies?: any
     timestamp: string
   }
   error?: {
@@ -160,7 +173,7 @@ export default defineEventHandler(async (event): Promise<AnalysisResponse> => {
       profileId: profile.id || uuidv4(),
       analysis: {
         summary: structuredAnalysis.analysis,
-        healthScore: calculateHealthScore(profile),
+        healthScore: structuredAnalysis.healthScore > 0 ? structuredAnalysis.healthScore : calculateHealthScore(profile), // AI 分數優先，回退到計算分數
         riskProfile: mapRiskProfile(profile.riskAssessment.riskTolerance),
       },
       recommendations: structuredAnalysis.recommendations.map(rec => ({
@@ -203,12 +216,32 @@ export default defineEventHandler(async (event): Promise<AnalysisResponse> => {
     return {
       success: true,
       data: {
-        analysis: structuredAnalysis.analysis,
-        recommendations: structuredAnalysis.recommendations,
+        // 與 analysisRecord 結構保持一致
+        analysis: {
+          summary: structuredAnalysis.analysis,
+          healthScore: structuredAnalysis.healthScore > 0 ? structuredAnalysis.healthScore : calculateHealthScore(profile),
+          riskProfile: mapRiskProfile(profile.riskAssessment.riskTolerance),
+          healthGrade: structuredAnalysis.healthGrade,
+          scoreBreakdown: structuredAnalysis.scoreBreakdown,
+        },
+        recommendations: structuredAnalysis.recommendations.map(rec => ({
+          ...rec,
+          id: uuidv4(),
+        })),
         riskAssessment: structuredAnalysis.riskAssessment,
         financialPlan: structuredAnalysis.financialPlan,
         budgetSuggestions: generateBudgetSuggestions(profile),
-        investmentAdvice: structuredAnalysis.investmentAdvice,
+        investmentAdvice: {
+          riskProfile: mapRiskProfile(profile.riskAssessment.riskTolerance),
+          recommendedAllocation: structuredAnalysis.investmentAdvice?.recommendedAllocation || [],
+          monthlyInvestmentSuggestion: Math.round(profile.basicInfo.monthlyIncome * 0.1),
+          expectedReturns: {
+            conservative: 4,
+            moderate: 7,
+            aggressive: 10,
+          },
+        },
+        goalStrategies: generateGoalStrategies(profile),
         timestamp: new Date().toISOString(),
       },
       usage: analysisResult.usage,
@@ -279,14 +312,29 @@ function generateAnalysisPrompts(profile: IFinancialProfile): {
   const systemPrompt = `你是一位專業的台灣財務顧問，擅長個人理財規劃和投資建議。請基於用戶提供的財務問卷資料，提供全面且實用的財務分析和建議。
 
 分析重點：
-1. 財務健康度評估
+1. 財務健康度評估（請提供 0-100 的健康分數）
 2. 風險承受能力分析
 3. 個人化投資建議
 4. 短中長期財務規劃
 5. 預算優化建議
 6. 目標達成策略
 
-請以繁體中文回應，並提供具體可行的建議。回應格式應該結構化，包含分析、建議、和行動計劃。`
+請以繁體中文回應，並提供具體可行的建議。
+
+**重要：請在回應的開頭提供一個 JSON 格式的財務健康評分**：
+{
+  "healthScore": [0-100的整數分數],
+  "healthGrade": "[A+/A/B+/B/C+/C/D/F]",
+  "scoreBreakdown": {
+    "savingsRate": [儲蓄率評分],
+    "debtManagement": [債務管理評分], 
+    "emergencyFund": [緊急預備金評分],
+    "investmentDiversification": [投資多元化評分],
+    "goalProgress": [目標達成進度評分]
+  }
+}
+
+然後提供詳細的財務分析內容。`
 
   const userPrompt = `請分析以下財務問卷資料並提供個人化建議：
 
@@ -337,11 +385,161 @@ ${profile.additionalNotes ? `## 額外諮詢內容\n${profile.additionalNotes}` 
 /**
  * 解析 AI 回應為結構化資料
  */
-function parseAIResponse(rawResponse: string) {
-  // 這裡可以實作更複雜的解析邏輯
-  // 目前先提供基本結構
+function parseAIResponse(rawResponse: string): {
+  analysis: string
+  summary: string
+  healthScore: number
+  healthGrade: string
+  scoreBreakdown: any
+  recommendations: any[]
+  riskAssessment: any
+  financialPlan: any
+  investmentAdvice: any
+} {
+  let healthScore = 0
+  let healthGrade = 'C'
+  let scoreBreakdown = {}
+  let cleanedResponse = rawResponse
+
+  console.log('🔍 原始 AI 回應長度:', rawResponse.length)
+  console.log('🔍 原始 AI 回應前 500 字元:', rawResponse.substring(0, 500))
+
+  try {
+    // 方法1: 尋找完整的 JSON 區塊（支援嵌套結構）
+    let jsonData: any = null
+    let jsonStartIndex = -1
+    let jsonEndIndex = -1
+
+    // 尋找 JSON 開始位置
+    const jsonStart = rawResponse.indexOf('{')
+    if (jsonStart !== -1) {
+      let braceCount = 0
+      let inString = false
+      let escapeNext = false
+
+      for (let i = jsonStart; i < rawResponse.length; i++) {
+        const char = rawResponse[i]
+
+        if (escapeNext) {
+          escapeNext = false
+          continue
+        }
+
+        if (char === '\\') {
+          escapeNext = true
+          continue
+        }
+
+        if (char === '"') {
+          inString = !inString
+          continue
+        }
+
+        if (!inString) {
+          if (char === '{') {
+            braceCount++
+            if (jsonStartIndex === -1) jsonStartIndex = i
+          }
+          else if (char === '}') {
+            braceCount--
+            if (braceCount === 0 && jsonStartIndex !== -1) {
+              jsonEndIndex = i + 1
+              break
+            }
+          }
+        }
+      }
+
+      if (jsonStartIndex !== -1 && jsonEndIndex !== -1) {
+        const jsonString = rawResponse.substring(jsonStartIndex, jsonEndIndex)
+        console.log('🎯 提取的 JSON:', jsonString)
+
+        try {
+          jsonData = JSON.parse(jsonString)
+          console.log('✅ JSON 解析成功:', jsonData)
+
+          // 提取健康評分資訊
+          if (jsonData.healthScore !== undefined) {
+            healthScore = Number.parseInt(jsonData.healthScore) || 0
+            healthGrade = jsonData.healthGrade || 'C'
+            scoreBreakdown = jsonData.scoreBreakdown || {}
+
+            // 移除 JSON 部分，保留文字分析
+            cleanedResponse = rawResponse.replace(jsonString, '').trim()
+            console.log('✅ 健康評分提取成功:', { healthScore, healthGrade })
+          }
+        }
+        catch (parseError) {
+          console.log('⚠️ JSON 解析失敗，嘗試修復:', parseError)
+        }
+      }
+    }
+
+    // 方法2: 如果方法1失敗，嘗試正規表達式搜尋
+    if (!jsonData && rawResponse.includes('healthScore')) {
+      const regexPatterns = [
+        /\{[^{}]*?"healthScore"[^{}]*\}/g, // 簡單 JSON
+        /\{[\s\S]*?"healthScore"[\s\S]*?\}/g, // 複雜 JSON
+        /"healthScore"\s*:\s*(\d+)/g, // 直接提取數值
+      ]
+
+      for (const pattern of regexPatterns) {
+        const matches = rawResponse.match(pattern)
+        if (matches) {
+          console.log('🔍 正規表達式匹配:', matches)
+
+          if (pattern.source.includes('healthScore.*\\d+')) {
+            // 直接數值匹配
+            const scoreMatch = matches[0].match(/\d+/)
+            if (scoreMatch) {
+              healthScore = Number.parseInt(scoreMatch[0])
+              console.log('✅ 直接提取分數:', healthScore)
+            }
+          }
+          else {
+            // JSON 匹配
+            try {
+              const testJson = JSON.parse(matches[0])
+              if (testJson.healthScore !== undefined) {
+                healthScore = Number.parseInt(testJson.healthScore) || 0
+                healthGrade = testJson.healthGrade || 'C'
+                scoreBreakdown = testJson.scoreBreakdown || {}
+                cleanedResponse = rawResponse.replace(matches[0], '').trim()
+                console.log('✅ 正規表達式解析成功:', { healthScore, healthGrade })
+                break
+              }
+            }
+            catch (e) {
+              console.log('⚠️ 正規表達式 JSON 解析失敗')
+            }
+          }
+        }
+      }
+    }
+
+    // 清理文字回應（移除多餘的換行和空白）
+    cleanedResponse = cleanedResponse
+      .replace(/^\s*[\r\n]|[\r\n]\s*$/g, '') // 移除開頭結尾換行
+      .replace(/[\r\n]{3,}/g, '\n\n') // 多個換行改為雙換行
+      .trim()
+  }
+  catch (error) {
+    console.error('❌ AI 回應解析失敗:', error)
+  }
+
+  console.log('📊 最終解析結果:', {
+    healthScore,
+    healthGrade,
+    analysisLength: cleanedResponse.length,
+    analysisPreview: cleanedResponse.substring(0, 200),
+  })
+
   return {
-    analysis: rawResponse,
+    analysis: cleanedResponse,
+    summary: cleanedResponse, // 新增 summary 欄位，用於顯示在前端
+    healthScore,
+    healthGrade,
+    scoreBreakdown,
     recommendations: [
       {
         title: '建立緊急預備金',
